@@ -155,13 +155,12 @@ export function Toolbar() {
 
         <PptxImportDialog open={importOpen} onOpenChange={setImportOpen} />
 
+        <Button variant="ghost" size="sm" className="gap-1.5 text-xs hidden sm:flex" onClick={openMetaDialog}>
+          <Pencil className="h-3.5 w-3.5" />
+          Métadonnées
+        </Button>
+
         <Dialog open={metaOpen} onOpenChange={setMetaOpen}>
-          <DialogTrigger render={
-            <Button variant="ghost" size="sm" className="gap-1.5 text-xs hidden sm:flex" onClick={openMetaDialog}>
-              <Pencil className="h-3.5 w-3.5" />
-              Métadonnées
-            </Button>
-          } />
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Métadonnées de la présentation</DialogTitle>
@@ -209,11 +208,9 @@ export function Toolbar() {
         </Dialog>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="gap-1.5 text-xs">
-              <Download className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Exporter</span>
-            </Button>
+          <DropdownMenuTrigger className="group/button inline-flex shrink-0 items-center justify-center rounded-[min(var(--radius-md),12px)] border border-transparent bg-clip-padding h-7 gap-1 px-2.5 text-[0.8rem] font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5">
+            <Download className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Exporter</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={handleExport}>
