@@ -17,8 +17,8 @@ executing_run_id: cefc49e6-4879-4349-8dc6-696212172954
 **2026-07-26** — Build Next.js OK, lint OK, Docker OK.  
 **2026-07-26** — Corrections post-build appliquées :
 - `app/page.tsx` : remplacement de `react-resizable-panels` (API instable) par un layout flex CSS avec largeurs fixes
-- `app/components/Toolbar.tsx` : correction imbrication `<button>` dans `<button>` (`asChild` → `render` pour `@base-ui/react`)
-- `app/components/LlmConfigDialog.tsx` : même correction base-ui `render`
+- `app/components/Toolbar.tsx` : refactorisation pour éviter imbrication `<button>` dans `<button>` (DialogTrigger et DropdownMenuTrigger avec `@base-ui/react` ne supportent pas `asChild` comme Radix UI) — boutons séparés avec `onClick` pour les dialogs, trigger stylisé sans `Button` pour le dropdown
+- `app/components/LlmConfigDialog.tsx` : même refactorisation (bouton séparé avec `onClick`, fragment JSX fermé correctement)
 - `__tests__/api/ollama/route.test.ts` : mise à jour message d'erreur (`"Proxy error"` → `"Proxy request failed"`)
 - `app/stores/presentationStore.ts` : simplification `createEmptyPresentation` à 1 slide (compatibilité tests)
 

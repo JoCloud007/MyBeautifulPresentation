@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,7 @@ export function LlmConfigDialog() {
   const testConnection = useCallback(async () => {
     setTesting(true);
     setTestResult(null);
+    setLocalModels([]);
     try {
       const available = await checkOllamaAvailability(config.baseUrl);
       setAvailable(available);
@@ -46,13 +47,16 @@ export function LlmConfigDialog() {
   }, [config.baseUrl, setAvailable, setModels]);
 
   // Auto-test connection when dialog opens
+  const testConnectionRef = useRef(testConnection);
+  testConnectionRef.current = testConnection;
+
   useEffect(() => {
     if (!open) return;
     const timer = setTimeout(() => {
-      testConnection();
+      testConnectionRef.current();
     }, 0);
     return () => clearTimeout(timer);
-  }, [open, testConnection]);
+  }, [open]);
 
   return (
     <>
@@ -174,5 +178,6 @@ export function LlmConfigDialog() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  </>
   );
 }
