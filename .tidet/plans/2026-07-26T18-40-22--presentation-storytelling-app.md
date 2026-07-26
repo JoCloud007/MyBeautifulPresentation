@@ -2,9 +2,10 @@
 schema_version: 1
 slug: 2026-07-26T18-40-22--presentation-storytelling-app
 title: 'Plan : MyBeautifulPresentation — Générateur de Présentations via Storytelling'
-status: approved
+status: executed
 created_at: 2026-07-26T16:42:13.860791Z
 decided_at: 2026-07-26T16:43:13.13498Z
+executed_at: 2026-07-26T21:18:07.081099Z
 run_id: 422c4b84-09e2-49b4-a928-f567d5c9e659
 executing_run_id: cefc49e6-4879-4349-8dc6-696212172954
 ---
