@@ -5,19 +5,33 @@ const hoisted = vi.hoisted(() => {
   
   class MockJSZip {
     private localFiles: Record<string, string> = {};
+    get files() {
+      const result: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(this.localFiles)) {
+        result[key] = {
+          dir: false,
+          async: (type: string) => {
+            if (type === 'text') return Promise.resolve(value);
+            throw new Error(`Unsupported async type: ${type}`);
+          },
+          _data: { uncompressedSize: value.length, compressedSize: value.length },
+        };
+      }
+      return result;
+    }
     file(path: string, content?: string) {
       if (content !== undefined) {
         this.localFiles[path] = content;
         return this;
       }
-      const data = this.localFiles[path];
-      if (!data) {
+      const entry = this.localFiles[path];
+      if (!entry) {
         console.log('MISSING file:', path, 'available:', Object.keys(this.localFiles));
         return undefined;
       }
       return {
         async: (type: string) => {
-          if (type === 'text') return Promise.resolve(data);
+          if (type === 'text') return Promise.resolve(entry);
           throw new Error(`Unsupported async type: ${type}`);
         },
       };
