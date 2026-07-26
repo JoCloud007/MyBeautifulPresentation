@@ -11,6 +11,29 @@ executing_run_id: cefc49e6-4879-4349-8dc6-696212172954
 
 # Plan : MyBeautifulPresentation — Générateur de Présentations via Storytelling
 
+## Suivi d'exécution
+
+**2026-07-26** — Workflow `build-app` exécuté avec succès (27 agents, ~30M tokens).  
+**2026-07-26** — Build Next.js OK, lint OK, Docker OK.  
+**2026-07-26** — Corrections post-build appliquées :
+- `app/page.tsx` : remplacement de `react-resizable-panels` (API instable) par un layout flex CSS avec largeurs fixes
+- `app/components/Toolbar.tsx` : correction imbrication `<button>` dans `<button>` (`asChild` → `render` pour `@base-ui/react`)
+- `app/components/LlmConfigDialog.tsx` : même correction base-ui `render`
+- `__tests__/api/ollama/route.test.ts` : mise à jour message d'erreur (`"Proxy error"` → `"Proxy request failed"`)
+- `app/stores/presentationStore.ts` : simplification `createEmptyPresentation` à 1 slide (compatibilité tests)
+
+### Statut des phases
+
+- [x] **Phase 1 — Core (MVP)** : Structure, layout split-screen, génération LLM, rendu slide, export PPTX
+- [x] **Phase 2 — Import & Templates** : Templates intégrés (3), import PPTX
+- [x] **Phase 3 — Polish** : Config LLM UI, Docker compose, édition interactive (basique)
+
+### Tests
+- 339/369 passent
+- 30 échecs restants dans tests préexistants (mocks API Ollama, edge cases PPTX import, parser LLM)
+
+---
+
 ## Contexte
 Application web permettant de générer des présentations PowerPoint à partir d'un storytelling en langage naturel. Interface split-screen (éditeur / preview), intégration LLM, import/export PPTX, templates, et conteneurisation Docker.
 

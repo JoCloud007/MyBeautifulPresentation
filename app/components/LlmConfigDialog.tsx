@@ -55,13 +55,13 @@ export function LlmConfigDialog() {
   }, [open, testConnection]);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={
-        <Button variant="ghost" size="icon" className="h-8 w-8" title="Configuration LLM">
-          <Settings className="h-4 w-4" />
-        </Button>
-      } />
-      <DialogContent className="sm:max-w-md">
+    <>
+      <Button variant="ghost" size="icon" className="h-8 w-8" title="Configuration LLM" onClick={() => setOpen(true)}>
+        <Settings className="h-4 w-4" />
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Configuration LLM</DialogTitle>
           <DialogDescription>
