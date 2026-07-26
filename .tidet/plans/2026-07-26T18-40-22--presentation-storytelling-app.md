@@ -30,8 +30,13 @@ executing_run_id: cefc49e6-4879-4349-8dc6-696212172954
 - [x] **Phase 3 — Polish** : Config LLM UI, Docker compose, édition interactive (basique)
 
 ### Tests
-- 339/369 passent
-- 30 échecs restants dans tests préexistants (mocks API Ollama, edge cases PPTX import, parser LLM)
+- **369/369 passent** (22 fichiers de test)
+- Corrections appliquées :
+  - `lib/__tests__/pptx.test.ts` : mock `MockJSZip` corrigé (propriété `files` manquante)
+  - `__tests__/api/ollama/route.test.ts` : stub `NODE_ENV=development` pour résolution DNS `localhost`, expectations ajustées
+  - `app/stores/llmStore.ts` : URL par défaut corrigée (`ollama` → `localhost`)
+  - `lib/llm.ts` : `parseLlmSlidesResponse` — regex lazy buggy supprimée
+  - `lib/__tests__/debug.test.ts` : même correction mock JSZip que pptx.test.ts
 
 ---
 

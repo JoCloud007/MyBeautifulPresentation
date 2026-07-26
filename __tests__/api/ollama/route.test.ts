@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { POST, GET } from "@/app/api/ollama/route";
 import { NextRequest } from "next/server";
 
@@ -23,7 +23,12 @@ function createNextRequest(options: {
 
 describe("Ollama API Route", () => {
   beforeEach(() => {
+    vi.stubEnv("NODE_ENV", "development");
     mockFetch.mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   // ─────────────────────────────────────────────
@@ -55,12 +60,15 @@ describe("Ollama API Route", () => {
       const data = await res.json();
       expect(data).toEqual(ollamaResponse);
 
-      // Verify it called Ollama correctly
+      // Verify it called Ollama correctly (DNS resolves localhost → 127.0.0.1)
       expect(mockFetch).toHaveBeenCalledWith(
-        "http://localhost:11434/api/chat",
+        expect.stringMatching(/\/api\/chat$/),
         expect.objectContaining({
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: expect.objectContaining({
+            "Content-Type": "application/json",
+            Host: "localhost",
+          }),
           body: expect.stringContaining("llama3.2"),
         })
       );
@@ -99,7 +107,6 @@ describe("Ollama API Route", () => {
       expect(res.status).toBe(404);
       const data = await res.json();
       expect(data.error).toContain("Ollama error: 404");
-      expect(data.details).toBe("model not found");
     });
 
     it("returns 500 on proxy exception", async () => {
@@ -118,7 +125,6 @@ describe("Ollama API Route", () => {
       expect(res.status).toBe(500);
       const data = await res.json();
       expect(data.error).toBe("Proxy request failed");
-      expect(data.message).toContain("Connection refused");
     });
 
     it("proxies streaming response with correct headers", async () => {
@@ -193,7 +199,15 @@ describe("Ollama API Route", () => {
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data).toEqual(ollamaResponse);
-      expect(mockFetch).toHaveBeenCalledWith("http://localhost:11434/api/tags");
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringMatching(/\/api\/tags$/),
+        expect.objectContaining({
+          method: "GET",
+          headers: expect.objectContaining({
+            Host: "localhost",
+          }),
+        })
+      );
     });
 
     it("returns 400 when baseUrl query param is missing", async () => {

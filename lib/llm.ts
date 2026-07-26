@@ -89,18 +89,20 @@ export async function* streamOllamaChat(
       }
     }
   } finally {
-    // Process any trailing buffer after the stream ends
-    if (buffer.trim()) {
-      try {
-        const chunk: OllamaResponse = JSON.parse(buffer.trim());
-        if (chunk.message?.content) {
-          yield chunk.message.content;
-        }
-      } catch {
-        // ignore malformed JSON
-      }
-    }
     reader.releaseLock();
+  }
+
+  // Flush any remaining bytes from the TextDecoder and process trailing buffer
+  buffer += decoder.decode();
+  if (buffer.trim()) {
+    try {
+      const chunk: OllamaResponse = JSON.parse(buffer.trim());
+      if (chunk.message?.content) {
+        yield chunk.message.content;
+      }
+    } catch {
+      // ignore malformed JSON
+    }
   }
 }
 
@@ -191,17 +193,8 @@ export function parseLlmSlidesResponse(raw: string): {
       jsonStr = codeBlockMatch[1].trim();
     }
 
-    // Strategy 2: Look for JSON object starting with { and ending with }
-    // Use lazy/non-greedy matching to find the first valid JSON object
-    if (!jsonStr.startsWith("{")) {
-      const jsonMatch = raw.match(/(\{[\s\S]*?\})/);
-      if (jsonMatch) {
-        jsonStr = jsonMatch[1].trim();
-      }
-    }
-
-    // Strategy 3: Try to find the outermost JSON object
-    // Only if previous strategies did not produce valid JSON starting with {
+    // Strategy 2: Try to find the outermost JSON object
+    // by locating the first { and the last } in the text
     if (!jsonStr.startsWith("{")) {
       const firstBrace = raw.indexOf("{");
       const lastBrace = raw.lastIndexOf("}");

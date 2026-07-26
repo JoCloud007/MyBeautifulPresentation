@@ -42,14 +42,25 @@ const hoisted = vi.hoisted(() => {
         this.localFiles[path] = content;
         return this;
       }
-      const data = this.localFiles[path];
-      if (!data) return undefined;
-      return {
-        async: (type: string) => {
-          if (type === 'text') return data;
-          throw new Error(`Unsupported async type: ${type}`);
-        },
-      };
+      return this.files[path];
+    }
+
+    get files(): Record<string, { dir: boolean; async: (type: string) => Promise<string>; _data: { uncompressedSize: number; compressedSize: number } }> {
+      const result: Record<string, any> = {};
+      for (const [path, content] of Object.entries(this.localFiles)) {
+        result[path] = {
+          dir: false,
+          async: async (type: string) => {
+            if (type === 'text') return content;
+            throw new Error(`Unsupported async type: ${type}`);
+          },
+          _data: {
+            uncompressedSize: content.length,
+            compressedSize: Math.max(1, Math.floor(content.length / 2)),
+          },
+        };
+      }
+      return result;
     }
 
     async generateAsync(_opts: unknown) {
