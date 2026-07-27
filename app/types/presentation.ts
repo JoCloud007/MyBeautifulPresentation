@@ -13,7 +13,9 @@ export type SlideLayout =
   | "title-only"
   | "content-only"
   | "image-left"
-  | "image-right";
+  | "image-right"
+  | "timeline"
+  | "gantt";
 
 export interface Presentation {
   id: string;
