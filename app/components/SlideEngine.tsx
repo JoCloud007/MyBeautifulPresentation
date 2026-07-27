@@ -309,6 +309,217 @@ function LayoutRenderer({
         </div>
       );
 
+    case "timeline": {
+      const events = slide.content
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean);
+      const total = events.length || 1;
+      return (
+        <div className="flex flex-col h-full px-[6%] py-[5%]">
+          <h2
+            className={cn(
+              "font-bold mb-[2%]",
+              isMini ? "text-[7px]" : "text-[clamp(1rem,2vw,1.6rem)]"
+            )}
+            style={headingStyle}
+          >
+            {slide.title}
+          </h2>
+          {!isMini && (
+            <div
+              className="w-10 h-0.5 rounded-full mb-[3%]"
+              style={{ backgroundColor: colors.accent, opacity: 0.5 }}
+            />
+          )}
+          <div className="flex-1 relative flex items-center">
+            {/* Horizontal line */}
+            <div
+              className="absolute left-[4%] right-[4%] h-0.5 rounded-full"
+              style={{ backgroundColor: colors.border }}
+            />
+            {/* Active segment */}
+            <div
+              className="absolute left-[4%] h-0.5 rounded-full"
+              style={{
+                width: total > 1 ? `${((total - 1) / total) * 92}%` : "0%",
+                backgroundColor: colors.accent,
+              }}
+            />
+            {/* Events */}
+            <div className="relative w-full flex justify-between px-[4%]">
+              {events.map((evt, i) => {
+                const sep = evt.indexOf(" - ");
+                const date = sep >= 0 ? evt.slice(0, sep).trim() : "";
+                const desc = sep >= 0 ? evt.slice(sep + 3).trim() : evt;
+                const isAbove = i % 2 === 0;
+                return (
+                  <div
+                    key={i}
+                    className="flex flex-col items-center"
+                    style={{ width: `${90 / total}%` }}
+                  >
+                    {isAbove && !isMini && (
+                      <>
+                        <span
+                          className="text-[10px] font-semibold leading-tight text-center"
+                          style={{ color: colors.accent }}
+                        >
+                          {date}
+                        </span>
+                        <span
+                          className="text-[9px] leading-tight text-center mt-0.5"
+                          style={secondaryStyle}
+                        >
+                          {desc}
+                        </span>
+                        <div
+                          className="w-px h-3 mt-1"
+                          style={{ backgroundColor: colors.border }}
+                        />
+                      </>
+                    )}
+                    <div
+                      className={cn(
+                        "rounded-full flex-shrink-0",
+                        isMini ? "w-1.5 h-1.5" : "w-3 h-3"
+                      )}
+                      style={{
+                        backgroundColor: colors.accent,
+                        border: `2px solid ${colors.background}`,
+                      }}
+                    />
+                    {!isAbove && !isMini && (
+                      <>
+                        <div
+                          className="w-px h-3 mb-1"
+                          style={{ backgroundColor: colors.border }}
+                        />
+                        <span
+                          className="text-[10px] font-semibold leading-tight text-center"
+                          style={{ color: colors.accent }}
+                        >
+                          {date}
+                        </span>
+                        <span
+                          className="text-[9px] leading-tight text-center mt-0.5"
+                          style={secondaryStyle}
+                        >
+                          {desc}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    case "gantt": {
+      const tasks = slide.content
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .map((l) => {
+          const parts = l.split("|").map((p) => p.trim());
+          return {
+            name: parts[0] || "",
+            start: parseFloat(parts[1]) || 0,
+            duration: parseFloat(parts[2]) || 1,
+            color: parts[3] || colors.accent,
+          };
+        });
+      const maxEnd = Math.max(
+        ...tasks.map((t) => t.start + t.duration),
+        5
+      );
+      return (
+        <div className="flex flex-col h-full px-[5%] py-[4%]">
+          <h2
+            className={cn(
+              "font-bold mb-[2%]",
+              isMini ? "text-[7px]" : "text-[clamp(1rem,2vw,1.6rem)]"
+            )}
+            style={headingStyle}
+          >
+            {slide.title}
+          </h2>
+          {!isMini && (
+            <div
+              className="w-10 h-0.5 rounded-full mb-[2%]"
+              style={{ backgroundColor: colors.accent, opacity: 0.5 }}
+            />
+          )}
+          <div className="flex-1 flex flex-col gap-1 overflow-hidden">
+            {/* Header */}
+            {!isMini && (
+              <div className="flex items-center gap-2 pb-1 border-b" style={{ borderColor: colors.border }}>
+                <div className="w-[28%] text-[10px] font-semibold" style={secondaryStyle}>
+                  Tâche
+                </div>
+                <div className="flex-1 flex justify-between text-[9px]" style={secondaryStyle}>
+                  {Array.from({ length: maxEnd + 1 }, (_, i) => (
+                    <span key={i} className="w-6 text-center">{i}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Task rows */}
+            {tasks.map((task, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-2 py-0.5"
+                style={{
+                  borderBottom: `1px solid ${colors.border}`,
+                  opacity: 0.9,
+                }}
+              >
+                <div
+                  className={cn(
+                    "w-[28%] truncate leading-tight",
+                    isMini ? "text-[5px]" : "text-[10px]"
+                  )}
+                  style={bodyStyle}
+                >
+                  {task.name}
+                </div>
+                <div className="flex-1 relative h-4">
+                  {!isMini && (
+                    <div
+                      className="absolute inset-0 flex"
+                      style={{ opacity: 0.15 }}
+                    >
+                      {Array.from({ length: maxEnd + 1 }, (_, j) => (
+                        <div
+                          key={j}
+                          className="flex-1 border-r"
+                          style={{ borderColor: colors.border }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <div
+                    className="absolute top-0.5 h-3 rounded-full"
+                    style={{
+                      left: `${(task.start / maxEnd) * 100}%`,
+                      width: `${(task.duration / maxEnd) * 100}%`,
+                      backgroundColor: task.color.startsWith("#")
+                        ? task.color
+                        : colors.accent,
+                      minWidth: "4px",
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     case "title-content":
     default:
       return (

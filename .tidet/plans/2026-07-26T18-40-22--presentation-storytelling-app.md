@@ -16,6 +16,12 @@ executing_run_id: cefc49e6-4879-4349-8dc6-696212172954
 
 **2026-07-26** — Workflow `build-app` exécuté avec succès (27 agents, ~30M tokens).  
 **2026-07-26** — Build Next.js OK, lint OK, Docker OK.  
+**2026-07-27** — Ajout des layouts `timeline` et `gantt` :
+- `app/types/presentation.ts` : extension du type `SlideLayout`
+- `app/components/SlideEngine.tsx` : rendu visuel timeline (ligne horizontale + nœuds + événements alternés) et GANTT (grille + barres colorées)
+- `lib/pptxExport.ts` : export PPTX des deux layouts
+- `app/components/SlideEditor.tsx` : options dans le sélecteur + hints de format
+
 **2026-07-26** — Corrections post-build appliquées :
 - `app/page.tsx` : remplacement de `react-resizable-panels` (API instable) par un layout flex CSS avec largeurs fixes
 - `app/components/Toolbar.tsx` : refactorisation pour éviter imbrication `<button>` dans `<button>` (DialogTrigger et DropdownMenuTrigger avec `@base-ui/react` ne supportent pas `asChild` comme Radix UI) — boutons séparés avec `onClick` pour les dialogs, trigger stylisé sans `Button` pour le dropdown

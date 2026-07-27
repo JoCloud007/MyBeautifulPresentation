@@ -22,6 +22,8 @@ import {
   FileText,
   Heading,
   StickyNote,
+  Timer,
+  BarChart3,
 } from "lucide-react";
 
 const layoutOptions: { value: SlideLayout; label: string; icon: React.ReactNode }[] = [
@@ -34,6 +36,8 @@ const layoutOptions: { value: SlideLayout; label: string; icon: React.ReactNode 
   { value: "image-left", label: "Image gauche", icon: <Image className="w-3.5 h-3.5" aria-hidden="true" /> },
   // eslint-disable-next-line jsx-a11y/alt-text
   { value: "image-right", label: "Image droite", icon: <Image className="w-3.5 h-3.5" aria-hidden="true" /> },
+  { value: "timeline", label: "Timeline", icon: <Timer className="w-3.5 h-3.5" /> },
+  { value: "gantt", label: "GANTT", icon: <BarChart3 className="w-3.5 h-3.5" /> },
 ];
 
 export function SlideEditor() {
@@ -127,6 +131,16 @@ export function SlideEditor() {
           {slide.layout === "two-column" && (
             <p className="text-[11px] text-muted-foreground">
               Utilisez le caractère <code className="bg-muted px-1 rounded">|</code> pour séparer les deux colonnes.
+            </p>
+          )}
+          {slide.layout === "timeline" && (
+            <p className="text-[11px] text-muted-foreground">
+              Une ligne par événement : <code className="bg-muted px-1 rounded">Date - Description</code>
+            </p>
+          )}
+          {slide.layout === "gantt" && (
+            <p className="text-[11px] text-muted-foreground">
+              Une ligne par tâche : <code className="bg-muted px-1 rounded">Nom | Début | Durée | Couleur</code> (couleur optionnelle)
             </p>
           )}
         </div>

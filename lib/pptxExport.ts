@@ -305,6 +305,201 @@ export function exportToPPTX(
         break;
       }
 
+      case "timeline": {
+        const events = slide.content
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
+        const total = events.length || 1;
+
+        // Title
+        s.addText(slide.title, {
+          x: 0.5,
+          y: 0.3,
+          w: "90%",
+          h: 0.6,
+          fontSize: 28,
+          bold: true,
+          color: fgColor,
+          fontFace: headingFont,
+        });
+
+        // Accent underline
+        s.addShape(pptx.ShapeType.rect, {
+          x: 0.5,
+          y: 0.9,
+          w: 0.5,
+          h: 0.03,
+          fill: { color: accentColor, transparency: 40 },
+        });
+
+        // Timeline horizontal line
+        s.addShape(pptx.ShapeType.rect, {
+          x: "8%",
+          y: "52%",
+          w: "84%",
+          h: 0.04,
+          fill: { color: secondaryColor, transparency: 60 },
+        });
+
+        // Active segment
+        if (total > 1) {
+          s.addShape(pptx.ShapeType.rect, {
+            x: "8%",
+            y: "52%",
+            w: `${((total - 1) / total) * 84}%`,
+            h: 0.04,
+            fill: { color: accentColor },
+          });
+        }
+
+        // Event nodes and labels
+        events.forEach((evt, i) => {
+          const sep = evt.indexOf(" - ");
+          const date = sep >= 0 ? evt.slice(0, sep).trim() : "";
+          const desc = sep >= 0 ? evt.slice(sep + 3).trim() : evt;
+          const isAbove = i % 2 === 0;
+          const xPos = 8 + (i / Math.max(total - 1, 1)) * 84;
+
+          // Node circle
+          s.addShape(pptx.ShapeType.ellipse, {
+            x: `${xPos - 1}%`,
+            y: "50.5%",
+            w: 0.2,
+            h: 0.2,
+            fill: { color: accentColor },
+          });
+
+          if (date) {
+            s.addText(date, {
+              x: `${xPos - 8}%`,
+              y: isAbove ? "38%" : "58%",
+              w: "16%",
+              h: 0.3,
+              fontSize: 10,
+              bold: true,
+              color: accentColor,
+              align: "center",
+              fontFace: bodyFont,
+            });
+          }
+          if (desc) {
+            s.addText(desc, {
+              x: `${xPos - 8}%`,
+              y: isAbove ? "43%" : "63%",
+              w: "16%",
+              h: 0.4,
+              fontSize: 9,
+              color: secondaryColor,
+              align: "center",
+              fontFace: bodyFont,
+            });
+          }
+        });
+        break;
+      }
+
+      case "gantt": {
+        const tasks = slide.content
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .map((l) => {
+            const parts = l.split("|").map((p) => p.trim());
+            return {
+              name: parts[0] || "",
+              start: parseFloat(parts[1]) || 0,
+              duration: parseFloat(parts[2]) || 1,
+              color: parts[3] || accentColor,
+            };
+          });
+        const maxEnd = Math.max(...tasks.map((t) => t.start + t.duration), 5);
+
+        // Title
+        s.addText(slide.title, {
+          x: 0.5,
+          y: 0.3,
+          w: "90%",
+          h: 0.6,
+          fontSize: 28,
+          bold: true,
+          color: fgColor,
+          fontFace: headingFont,
+        });
+
+        // Accent underline
+        s.addShape(pptx.ShapeType.rect, {
+          x: 0.5,
+          y: 0.9,
+          w: 0.5,
+          h: 0.03,
+          fill: { color: accentColor, transparency: 40 },
+        });
+
+        // Header row
+        s.addText("Tâche", {
+          x: 0.5,
+          y: 1.3,
+          w: "25%",
+          h: 0.35,
+          fontSize: 11,
+          bold: true,
+          color: secondaryColor,
+          fontFace: headingFont,
+        });
+
+        // Grid lines and month labels
+        for (let i = 0; i <= maxEnd; i++) {
+          const xPos = 30 + (i / maxEnd) * 65;
+          s.addText(String(i), {
+            x: `${xPos - 2}%`,
+            y: 1.3,
+            w: "4%",
+            h: 0.3,
+            fontSize: 9,
+            color: secondaryColor,
+            align: "center",
+            fontFace: bodyFont,
+          });
+          s.addShape(pptx.ShapeType.rect, {
+            x: `${xPos}%`,
+            y: 1.6,
+            w: 0.01,
+            h: tasks.length * 0.5 + 0.2,
+            fill: { color: secondaryColor, transparency: 70 },
+          });
+        }
+
+        // Task rows
+        tasks.forEach((task, i) => {
+          const yPos = 1.7 + i * 0.5;
+          const barLeft = 30 + (task.start / maxEnd) * 65;
+          const barWidth = (task.duration / maxEnd) * 65;
+          const taskColor = task.color.startsWith("#")
+            ? stripHash(task.color)
+            : accentColor;
+
+          s.addText(task.name, {
+            x: 0.5,
+            y: yPos,
+            w: "25%",
+            h: 0.35,
+            fontSize: 10,
+            color: fgColor,
+            fontFace: bodyFont,
+          });
+
+          s.addShape(pptx.ShapeType.rect, {
+            x: `${barLeft}%`,
+            y: yPos + 0.05,
+            w: `${Math.max(barWidth, 2)}%`,
+            h: 0.25,
+            fill: { color: taskColor },
+          });
+        });
+        break;
+      }
+
       default: {
         // title-content
         s.addText(slide.title, {
