@@ -6,6 +6,23 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        https: false,
+        http: false,
+      };
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'node:fs': false,
+        'node:https': false,
+        'node:http': false,
+      };
+    }
+    return config;
+  },
   async headers() {
     return [
       {
