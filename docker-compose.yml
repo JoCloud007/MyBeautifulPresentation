@@ -13,10 +13,10 @@ services:
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_APP_URL=http://localhost:5182
-      - HTTP_PROXY=${HTTP_PROXY:-}
-      - HTTPS_PROXY=${HTTPS_PROXY:-}
-      - NO_PROXY=${NO_PROXY:-}
-      - NODE_TLS_REJECT_UNAUTHORIZED=${NODE_TLS_REJECT_UNAUTHORIZED:-1}
+      - HTTP_PROXY=${COMPOSE_HTTP_PROXY:-}
+      - HTTPS_PROXY=${COMPOSE_HTTPS_PROXY:-}
+      - NO_PROXY=${COMPOSE_NO_PROXY:-}
+      - NODE_TLS_REJECT_UNAUTHORIZED=${COMPOSE_NODE_TLS_REJECT_UNAUTHORIZED:-1}
     networks:
       - mybp-network
 
