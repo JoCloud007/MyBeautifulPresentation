@@ -1,11 +1,13 @@
-import { LlmConfig, LlmMessage, OllamaChatRequest, OllamaResponse } from "@/app/types/llm";
+import { LlmConfig, LlmMessage, OllamaChatRequest, OllamaResponse, OpenAIChatRequest, OpenAIChatResponse } from "@/app/types/llm";
 import { Template } from "@/app/types/template";
 
-export async function checkOllamaAvailability(baseUrl: string): Promise<boolean> {
+export async function checkLlmAvailability(config: LlmConfig): Promise<boolean> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 3000);
   try {
-    const res = await fetch(`/api/ollama?baseUrl=${encodeURIComponent(baseUrl)}`, {
+    const params = new URLSearchParams({ baseUrl: config.baseUrl, provider: config.provider });
+    if (config.apiKey) params.set("apiKey", config.apiKey);
+    const res = await fetch(`/api/ollama?${params.toString()}`, {
       method: "GET",
       signal: controller.signal,
     });
@@ -17,15 +19,20 @@ export async function checkOllamaAvailability(baseUrl: string): Promise<boolean>
   }
 }
 
-export async function fetchOllamaModels(baseUrl: string): Promise<string[]> {
+export async function fetchLlmModels(config: LlmConfig): Promise<string[]> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
   try {
-    const res = await fetch(`/api/ollama?baseUrl=${encodeURIComponent(baseUrl)}`, {
+    const params = new URLSearchParams({ baseUrl: config.baseUrl, provider: config.provider });
+    if (config.apiKey) params.set("apiKey", config.apiKey);
+    const res = await fetch(`/api/ollama?${params.toString()}`, {
       signal: controller.signal,
     });
     if (!res.ok) return [];
     const data = await res.json();
+    if (config.provider === "openai") {
+      return (data.data || []).map((m: { id: string }) => m.id);
+    }
     return (data.models || []).map((m: { name: string }) => m.name);
   } catch {
     return [];
@@ -34,26 +41,37 @@ export async function fetchOllamaModels(baseUrl: string): Promise<string[]> {
   }
 }
 
-export async function* streamOllamaChat(
+export async function* streamLlmChat(
   config: LlmConfig,
   messages: LlmMessage[],
   signal?: AbortSignal
 ): AsyncGenerator<string, void, unknown> {
-  const body: OllamaChatRequest = {
-    model: config.model,
-    messages,
-    stream: true,
-    options: {
-      temperature: config.temperature,
-      num_predict: config.maxTokens,
-    },
-  };
+  const isOpenAI = config.provider === "openai";
+  const body = isOpenAI
+    ? {
+        model: config.model,
+        messages,
+        stream: true,
+        temperature: config.temperature,
+        max_tokens: config.maxTokens,
+      }
+    : {
+        model: config.model,
+        messages,
+        stream: true,
+        options: {
+          temperature: config.temperature,
+          num_predict: config.maxTokens,
+        },
+      };
 
   const res = await fetch("/api/ollama", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       baseUrl: config.baseUrl,
+      provider: config.provider,
+      apiKey: config.apiKey,
       ...body,
     }),
     signal,
@@ -78,6 +96,20 @@ export async function* streamOllamaChat(
 
       for (const line of lines) {
         if (!line.trim()) continue;
+        // OpenAI SSE format: data: {...}
+        if (line.startsWith("data: ")) {
+          const jsonStr = line.slice(6);
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const chunk: OpenAIChatResponse = JSON.parse(jsonStr);
+            const content = chunk.choices?.[0]?.delta?.content;
+            if (content) yield content;
+          } catch {
+            // ignore malformed JSON
+          }
+          continue;
+        }
+        // Ollama NDJSON format
         try {
           const chunk: OllamaResponse = JSON.parse(line);
           if (chunk.message?.content) {
@@ -95,47 +127,77 @@ export async function* streamOllamaChat(
   // Flush any remaining bytes from the TextDecoder and process trailing buffer
   buffer += decoder.decode();
   if (buffer.trim()) {
-    try {
-      const chunk: OllamaResponse = JSON.parse(buffer.trim());
-      if (chunk.message?.content) {
-        yield chunk.message.content;
+    const line = buffer.trim();
+    if (line.startsWith("data: ")) {
+      const jsonStr = line.slice(6);
+      if (jsonStr !== "[DONE]") {
+        try {
+          const chunk: OpenAIChatResponse = JSON.parse(jsonStr);
+          const content = chunk.choices?.[0]?.delta?.content;
+          if (content) yield content;
+        } catch {
+          // ignore malformed JSON
+        }
       }
-    } catch {
-      // ignore malformed JSON
+    } else {
+      try {
+        const chunk: OllamaResponse = JSON.parse(line);
+        if (chunk.message?.content) {
+          yield chunk.message.content;
+        }
+      } catch {
+        // ignore malformed JSON
+      }
     }
   }
 }
 
-export async function callOllamaChat(
+export async function callLlmChat(
   config: LlmConfig,
   messages: LlmMessage[]
 ): Promise<string> {
-  const body: OllamaChatRequest = {
-    model: config.model,
-    messages,
-    stream: false,
-    options: {
-      temperature: config.temperature,
-      num_predict: config.maxTokens,
-    },
-  };
+  const isOpenAI = config.provider === "openai";
+  const body = isOpenAI
+    ? {
+        model: config.model,
+        messages,
+        stream: false,
+        temperature: config.temperature,
+        max_tokens: config.maxTokens,
+      }
+    : {
+        model: config.model,
+        messages,
+        stream: false,
+        options: {
+          temperature: config.temperature,
+          num_predict: config.maxTokens,
+        },
+      };
 
   const res = await fetch("/api/ollama", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       baseUrl: config.baseUrl,
+      provider: config.provider,
+      apiKey: config.apiKey,
       ...body,
     }),
   });
 
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
-    throw new Error(`Ollama error: ${res.status} ${text}`);
+    throw new Error(`LLM error: ${res.status} ${text}`);
   }
 
-  const data: OllamaResponse = await res.json();
-  return data.message?.content || "";
+  const data = await res.json();
+  if (isOpenAI) {
+    const openData = data as OpenAIChatResponse;
+    return openData.choices?.[0]?.message?.content || "";
+  }
+  const ollamaData = data as OllamaResponse;
+  return ollamaData.message?.content || "";
 }
 
 export function buildStorytellingPrompt(
@@ -224,6 +286,14 @@ export function parseLlmSlidesResponse(raw: string): {
 /**
  * Validates and normalizes a layout string to a known SlideLayout.
  */
+// Backward-compatible aliases
+export const checkOllamaAvailability = (baseUrl: string) =>
+  checkLlmAvailability({ provider: "ollama", baseUrl, model: "", temperature: 0.7, maxTokens: 4096, systemPrompt: "" });
+export const fetchOllamaModels = (baseUrl: string) =>
+  fetchLlmModels({ provider: "ollama", baseUrl, model: "", temperature: 0.7, maxTokens: 4096, systemPrompt: "" });
+export const streamOllamaChat = streamLlmChat;
+export const callOllamaChat = callLlmChat;
+
 export function normalizeLayout(layout: string): string {
   const validLayouts = [
     "title",

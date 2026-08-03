@@ -1,40 +1,25 @@
-version: "3.8"
-
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        HTTP_PROXY: ${COMPOSE_HTTP_PROXY:-}
+        HTTPS_PROXY: ${COMPOSE_HTTPS_PROXY:-}
+        NO_PROXY: ${COMPOSE_NO_PROXY:-}
+        NODE_TLS_REJECT_UNAUTHORIZED: ${COMPOSE_NODE_TLS_REJECT_UNAUTHORIZED:-1}
     ports:
-      - "3000:3000"
+      - "5182:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_APP_URL=http://localhost:3000
-    depends_on:
-      ollama:
-        condition: service_healthy
+      - NEXT_PUBLIC_APP_URL=http://localhost:5182
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-}
+      - NODE_TLS_REJECT_UNAUTHORIZED=${NODE_TLS_REJECT_UNAUTHORIZED:-1}
     networks:
       - mybp-network
-
-  ollama:
-    image: ollama/ollama:latest
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    networks:
-      - mybp-network
-    healthcheck:
-      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 10 && ollama pull llama3.2 && wait"]
 
 networks:
   mybp-network:
     driver: bridge
-
-volumes:
-  ollama-data:

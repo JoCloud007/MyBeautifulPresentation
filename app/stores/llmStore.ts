@@ -19,6 +19,7 @@ interface LlmState {
 }
 
 const defaultConfig: LlmConfig = {
+  provider: "ollama",
   baseUrl: "http://localhost:11434",
   model: "llama3.2",
   temperature: 0.7,

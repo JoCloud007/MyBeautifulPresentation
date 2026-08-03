@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useLlmStore } from "../stores/llmStore";
 import { Settings, Check, AlertCircle, Loader2 } from "lucide-react";
-import { checkOllamaAvailability, fetchOllamaModels } from "@/lib/llm";
+import { checkLlmAvailability, fetchLlmModels } from "@/lib/llm";
 
 export function LlmConfigDialog() {
   const { config, setConfig, setAvailable, setModels } = useLlmStore();
@@ -30,11 +30,11 @@ export function LlmConfigDialog() {
     setTestResult(null);
     setLocalModels([]);
     try {
-      const available = await checkOllamaAvailability(config.baseUrl);
+      const available = await checkLlmAvailability(config);
       setAvailable(available);
       setTestResult(available);
       if (available) {
-        const models = await fetchOllamaModels(config.baseUrl);
+        const models = await fetchLlmModels(config);
         setModels(models);
         setLocalModels(models);
       }
@@ -44,7 +44,7 @@ export function LlmConfigDialog() {
     } finally {
       setTesting(false);
     }
-  }, [config.baseUrl, setAvailable, setModels]);
+  }, [config, setAvailable, setModels]);
 
   // Auto-test connection when dialog opens
   const testConnectionRef = useRef(testConnection);
@@ -69,20 +69,61 @@ export function LlmConfigDialog() {
         <DialogHeader>
           <DialogTitle>Configuration LLM</DialogTitle>
           <DialogDescription>
-            Configurez la connexion à Ollama pour la génération de slides.
+            Configurez votre fournisseur de LLM pour la génération de slides.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="baseUrl">URL Ollama</Label>
+            <Label>Provider</Label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="provider"
+                  value="ollama"
+                  checked={config.provider === "ollama"}
+                  onChange={() => setConfig({ provider: "ollama", baseUrl: "http://localhost:11434" })}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm">Ollama (local)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="provider"
+                  value="openai"
+                  checked={config.provider === "openai"}
+                  onChange={() => setConfig({ provider: "openai", baseUrl: "https://api.openai.com/v1" })}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm">OpenAI / Compatible</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="baseUrl">{config.provider === "openai" ? "URL de base API" : "URL Ollama"}</Label>
             <Input
               id="baseUrl"
               value={config.baseUrl}
               onChange={(e) => setConfig({ baseUrl: e.target.value })}
-              placeholder="http://localhost:11434"
+              placeholder={config.provider === "openai" ? "https://api.openai.com/v1" : "http://localhost:11434"}
             />
           </div>
+
+          {config.provider === "openai" && (
+            <div className="grid gap-2">
+              <Label htmlFor="apiKey">Clé API</Label>
+              <Input
+                id="apiKey"
+                type="password"
+                value={config.apiKey || ""}
+                onChange={(e) => setConfig({ apiKey: e.target.value })}
+                placeholder="sk-..."
+              />
+            </div>
+          )}
 
           <div className="grid gap-2">
             <Label htmlFor="model">Modèle</Label>
@@ -90,7 +131,7 @@ export function LlmConfigDialog() {
               id="model"
               value={config.model}
               onChange={(e) => setConfig({ model: e.target.value })}
-              placeholder="llama3.2"
+              placeholder={config.provider === "openai" ? "gpt-4o-mini" : "llama3.2"}
               list="model-suggestions"
             />
             <datalist id="model-suggestions">

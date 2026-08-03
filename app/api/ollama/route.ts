@@ -342,7 +342,7 @@ async function fetchWithDnsPinning(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { baseUrl, ...ollamaBody } = body;
+    const { baseUrl, provider, apiKey, ...providerBody } = body;
 
     if (!baseUrl || typeof baseUrl !== "string") {
       return NextResponse.json(
@@ -358,40 +358,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const validation = validateOllamaBody(ollamaBody);
-    if (!validation.valid) {
-      return NextResponse.json(
-        { error: validation.error },
-        { status: 400 }
-      );
+    const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+    const isOpenAI = provider === "openai";
+    const endpoint = isOpenAI ? "/v1/chat/completions" : "/api/chat";
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (isOpenAI && apiKey) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
     }
 
-    const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
-
     const res = await fetchWithDnsPinning(
-      `${normalizedBaseUrl}/api/chat`,
+      `${normalizedBaseUrl}${endpoint}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(ollamaBody),
+        headers,
+        body: JSON.stringify(providerBody),
         timeout: 60000,
       }
     );
 
     if (!res.ok) {
-      // Sanitize response to avoid leaking backend details
       return NextResponse.json(
-        { error: `Ollama error: ${res.status}` },
+        { error: `Provider error: ${res.status}` },
         { status: res.status }
       );
     }
 
     // For streaming, proxy the response directly with proper headers
-    if (ollamaBody.stream) {
+    if (providerBody.stream) {
       return new NextResponse(res.body, {
         status: 200,
         headers: {
-          "Content-Type": "application/x-ndjson",
+          "Content-Type": isOpenAI
+            ? "text/event-stream"
+            : "application/x-ndjson",
           "Cache-Control": "no-cache",
           Connection: "keep-alive",
         },
@@ -410,6 +412,8 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const baseUrl = searchParams.get("baseUrl");
+    const provider = searchParams.get("provider");
+    const apiKey = searchParams.get("apiKey");
 
     if (!baseUrl || typeof baseUrl !== "string") {
       return NextResponse.json(
@@ -426,18 +430,26 @@ export async function GET(req: NextRequest) {
     }
 
     const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+    const isOpenAI = provider === "openai";
+    const endpoint = isOpenAI ? "/v1/models" : "/api/tags";
+
+    const headers: Record<string, string> = {};
+    if (isOpenAI && apiKey) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
+    }
 
     const res = await fetchWithDnsPinning(
-      `${normalizedBaseUrl}/api/tags`,
+      `${normalizedBaseUrl}${endpoint}`,
       {
         method: "GET",
+        headers,
         timeout: 10000,
       }
     );
 
     if (!res.ok) {
       return NextResponse.json(
-        { error: `Ollama error: ${res.status}` },
+        { error: `Provider error: ${res.status}` },
         { status: res.status }
       );
     }

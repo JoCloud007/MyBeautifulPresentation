@@ -27,6 +27,7 @@ import {
   parseLlmSlidesResponse,
   streamOllamaChat,
   callOllamaChat,
+  checkLlmAvailability,
   normalizeLayout,
 } from "@/lib/llm";
 import { StoryExamplePrompts } from "./StoryExamplePrompts";
@@ -56,22 +57,15 @@ export function StoryEditor() {
   const [checkingConnection, setCheckingConnection] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Check Ollama connection on mount
+  // Check LLM connection on mount
   useEffect(() => {
     let cancelled = false;
-    let timeout: ReturnType<typeof setTimeout> | null = null;
     const check = async () => {
       setCheckingConnection(true);
       try {
-        const controller = new AbortController();
-        timeout = setTimeout(() => controller.abort(), 3000);
-        const res = await fetch(
-          `/api/ollama?baseUrl=${encodeURIComponent(config.baseUrl)}`,
-          { signal: controller.signal }
-        );
-        if (timeout) clearTimeout(timeout);
+        const available = await checkLlmAvailability(config);
         if (!cancelled) {
-          setAvailable(res.ok);
+          setAvailable(available);
         }
       } catch {
         if (!cancelled) {
@@ -86,9 +80,8 @@ export function StoryEditor() {
     check();
     return () => {
       cancelled = true;
-      if (timeout) clearTimeout(timeout);
     };
-  }, [config.baseUrl, setAvailable]);
+  }, [config, setAvailable]);
 
   const handleGenerate = useCallback(async () => {
     if (!storytelling.trim() || isGenerating) return;
@@ -439,7 +432,7 @@ export function StoryEditor() {
 
         {isAvailable === false && !checkingConnection && (
           <p className="text-[10px] text-red-500 text-center">
-            Ollama semble inaccessible. Vérifiez la configuration LLM.
+            Le LLM semble inaccessible. Vérifiez la configuration.
           </p>
         )}
       </div>
