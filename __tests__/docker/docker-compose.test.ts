@@ -58,21 +58,20 @@ describe("Docker Compose & UI Polish — Docker Configuration", () => {
       expect(composeFile).toContain("app:");
     });
 
-    it("defines ollama service", () => {
-      expect(composeFile).toContain("ollama:");
+    it("maps port 5182 for the app", () => {
+      expect(composeFile).toContain('"5182:3000"');
     });
 
-    it("maps port 3000 for the app", () => {
-      expect(composeFile).toContain('"3000:3000"');
+    it("does not define ollama service", () => {
+      expect(composeFile).not.toContain("ollama:");
     });
 
-    it("maps port 11434 for ollama", () => {
-      expect(composeFile).toContain('"11434:11434"');
+    it("does not map port 11434", () => {
+      expect(composeFile).not.toContain('"11434:11434"');
     });
 
-    it("uses depends_on for service ordering", () => {
-      expect(composeFile).toContain("depends_on:");
-      expect(composeFile).toContain("- ollama");
+    it("does not use depends_on", () => {
+      expect(composeFile).not.toContain("depends_on:");
     });
 
     it("defines a custom bridge network", () => {
@@ -81,25 +80,31 @@ describe("Docker Compose & UI Polish — Docker Configuration", () => {
       expect(composeFile).toContain("driver: bridge");
     });
 
-    it("defines a persistent volume for ollama", () => {
-      expect(composeFile).toContain("volumes:");
-      expect(composeFile).toContain("ollama-data:");
-    });
-
-    it("mounts ollama-data to /root/.ollama", () => {
-      expect(composeFile).toContain("- ollama-data:/root/.ollama");
+    it("does not define ollama volumes", () => {
+      expect(composeFile).not.toContain("ollama-data:");
+      expect(composeFile).not.toContain("- ollama-data:/root/.ollama");
     });
 
     it("sets NODE_ENV to production", () => {
       expect(composeFile).toContain("NODE_ENV=production");
     });
 
-    it("sets NEXT_PUBLIC_APP_URL", () => {
-      expect(composeFile).toContain("NEXT_PUBLIC_APP_URL");
+    it("sets NEXT_PUBLIC_APP_URL to port 5182", () => {
+      expect(composeFile).toContain("NEXT_PUBLIC_APP_URL=http://localhost:5182");
     });
 
-    it("uses latest ollama image", () => {
-      expect(composeFile).toContain("ollama/ollama:latest");
+    it("does not use ollama image", () => {
+      expect(composeFile).not.toContain("ollama/ollama:latest");
+    });
+
+    it("includes proxy build args", () => {
+      expect(composeFile).toContain("HTTP_PROXY:");
+      expect(composeFile).toContain("HTTPS_PROXY:");
+    });
+
+    it("includes proxy environment variables", () => {
+      expect(composeFile).toContain("HTTP_PROXY=${HTTP_PROXY:-}");
+      expect(composeFile).toContain("HTTPS_PROXY=${HTTPS_PROXY:-}");
     });
   });
 });

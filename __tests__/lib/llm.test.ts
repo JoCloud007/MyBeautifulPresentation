@@ -12,6 +12,7 @@ import { LlmConfig, LlmMessage } from "@/app/types/llm";
 import { Template } from "@/app/types/template";
 
 const dummyConfig: LlmConfig = {
+  provider: "ollama",
   baseUrl: "http://localhost:11434",
   model: "llama3.2",
   temperature: 0.7,
@@ -264,7 +265,7 @@ describe("LLM Storytelling Integration", () => {
       const result = await checkOllamaAvailability("http://localhost:11434");
       expect(result).toBe(true);
       expect(mockFetch).toHaveBeenCalledWith(
-        "/api/ollama?baseUrl=http%3A%2F%2Flocalhost%3A11434",
+        expect.stringContaining("baseUrl=http%3A%2F%2Flocalhost%3A11434"),
         expect.objectContaining({ method: "GET", signal: expect.any(AbortSignal) })
       );
     });
@@ -340,6 +341,7 @@ describe("LLM Storytelling Integration", () => {
   // ─────────────────────────────────────────────
   describe("callOllamaChat", () => {
     const config: LlmConfig = {
+      provider: "ollama",
       baseUrl: "http://localhost:11434",
       model: "llama3.2",
       temperature: 0.7,
@@ -390,7 +392,7 @@ describe("LLM Storytelling Integration", () => {
         statusText: "Internal Server Error",
         text: async () => "Ollama failed",
       });
-      await expect(callOllamaChat(config, messages)).rejects.toThrow("Ollama error: 500");
+      await expect(callOllamaChat(config, messages)).rejects.toThrow("LLM error: 500");
     });
 
     it("throws with statusText when text() fails", async () => {
@@ -400,7 +402,7 @@ describe("LLM Storytelling Integration", () => {
         statusText: "Service Unavailable",
         text: async () => { throw new Error("fail"); },
       });
-      await expect(callOllamaChat(config, messages)).rejects.toThrow("Ollama error: 503 Service Unavailable");
+      await expect(callOllamaChat(config, messages)).rejects.toThrow("LLM error: 503 Service Unavailable");
     });
 
     it("returns empty string when message content is missing", async () => {
@@ -428,6 +430,7 @@ describe("LLM Storytelling Integration", () => {
   // ─────────────────────────────────────────────
   describe("streamOllamaChat", () => {
     const config: LlmConfig = {
+      provider: "ollama",
       baseUrl: "http://localhost:11434",
       model: "llama3.2",
       temperature: 0.7,
@@ -524,7 +527,7 @@ describe("LLM Storytelling Integration", () => {
       await expect(async () => {
         const gen = streamOllamaChat(config, messages);
         await gen.next();
-      }).rejects.toThrow("Ollama error: 500 Error");
+      }).rejects.toThrow("LLM error: 500 Error");
     });
 
     it("throws when response has no body", async () => {
@@ -535,7 +538,7 @@ describe("LLM Storytelling Integration", () => {
       await expect(async () => {
         const gen = streamOllamaChat(config, messages);
         await gen.next();
-      }).rejects.toThrow("Ollama error");
+      }).rejects.toThrow("LLM error");
     });
 
     it("sends stream: true in request body", async () => {

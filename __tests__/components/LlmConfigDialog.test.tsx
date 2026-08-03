@@ -4,14 +4,15 @@ import { LlmConfigDialog } from "@/app/components/LlmConfigDialog";
 import { useLlmStore } from "@/app/stores/llmStore";
 
 vi.mock("@/lib/llm", () => ({
-  checkOllamaAvailability: vi.fn(() => Promise.resolve(true)),
-  fetchOllamaModels: vi.fn(() => Promise.resolve(["llama3.2", "mistral"])),
+  checkLlmAvailability: vi.fn(() => Promise.resolve(true)),
+  fetchLlmModels: vi.fn(() => Promise.resolve(["llama3.2", "mistral"])),
 }));
 
 describe("LlmConfigDialog — Docker Compose & UI Polish", () => {
   beforeEach(() => {
     useLlmStore.setState({
       config: {
+        provider: "ollama",
         baseUrl: "http://localhost:11434",
         model: "llama3.2",
         temperature: 0.7,

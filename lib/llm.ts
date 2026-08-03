@@ -78,7 +78,7 @@ export async function* streamLlmChat(
   });
 
   if (!res.ok || !res.body) {
-    throw new Error(`Ollama error: ${res.status} ${res.statusText}`);
+    throw new Error(`LLM error: ${res.status} ${res.statusText}`);
   }
 
   const reader = res.body.getReader();
