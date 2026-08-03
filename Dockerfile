@@ -9,13 +9,18 @@ ARG HTTP_PROXY=""
 ARG HTTPS_PROXY=""
 ARG NO_PROXY=""
 ARG NODE_TLS_REJECT_UNAUTHORIZED="1"
+ARG APK_NO_CHECK_CERTIFICATE=""
 
 ENV HTTP_PROXY=${HTTP_PROXY}
 ENV HTTPS_PROXY=${HTTPS_PROXY}
 ENV NO_PROXY=${NO_PROXY}
 ENV NODE_TLS_REJECT_UNAUTHORIZED=${NODE_TLS_REJECT_UNAUTHORIZED}
 
-RUN apk add --no-cache libc6-compat
+RUN if [ -n "$APK_NO_CHECK_CERTIFICATE" ]; then \
+      apk add --no-check-certificate --no-cache libc6-compat; \
+    else \
+      apk add --no-cache libc6-compat; \
+    fi
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
