@@ -15,7 +15,7 @@ export interface TimelineEvent {
   color?: string;
 }
 
-export type TimeScale = "days" | "weeks" | "months" | "quarters" | "years";
+export type TimeScale = "days" | "weeks" | "months" | "quarters" | "years" | "decades";
 
 export interface SlideData {
   gantt?: {

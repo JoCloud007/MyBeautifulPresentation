@@ -57,6 +57,7 @@ const VIEW_MODES: { value: TimeScale | "auto"; label: string }[] = [
   { value: "months", label: "Mois" },
   { value: "quarters", label: "Trimestres" },
   { value: "years", label: "Années" },
+  { value: "decades", label: "Décennies" },
 ];
 
 export function GanttBuilder() {

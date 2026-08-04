@@ -205,9 +205,49 @@ export function detectTimeScale(minDate: Date, maxDate: Date): TimeScale {
 
   if (diffDays < 14) return "days";
   if (diffDays < 90) return "weeks";
-  if (diffDays < 730) return "months";     // < 2 years
-  if (diffDays < 1825) return "quarters";  // < 5 years
-  return "years";
+  if (diffDays < 730) return "months";      // < 2 years
+  if (diffDays < 1825) return "quarters";   // < 5 years
+  if (diffDays < 5475) return "years";      // < 15 years
+  return "decades";                          // ≥ 15 years
+}
+
+/**
+ * Resolve the best time scale for readability.
+ * If the chosen scale produces too many markers (>25), bumps up to the next scale.
+ */
+export function resolveTimeScale(
+  minDate: Date,
+  maxDate: Date,
+  preferred: TimeScale | "auto"
+): TimeScale {
+  let scale: TimeScale = preferred === "auto" ? detectTimeScale(minDate, maxDate) : preferred;
+
+  const diffMs = maxDate.getTime() - minDate.getTime();
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  const diffMonths = (maxDate.getFullYear() - minDate.getFullYear()) * 12 + (maxDate.getMonth() - minDate.getMonth());
+  const diffYears = maxDate.getFullYear() - minDate.getFullYear() + 1;
+
+  const scales: TimeScale[] = ["days", "weeks", "months", "quarters", "years", "decades"];
+
+  function estimateMarkerCount(s: TimeScale): number {
+    switch (s) {
+      case "days": return Math.ceil(diffDays);
+      case "weeks": return Math.ceil(diffDays / 7);
+      case "months": return Math.max(1, diffMonths + 1);
+      case "quarters": return Math.max(1, Math.ceil((diffMonths + 1) / 3));
+      case "years": return Math.max(1, diffYears);
+      case "decades": return Math.max(1, Math.ceil(diffYears / 10));
+    }
+  }
+
+  const MAX_MARKERS = 25;
+  while (estimateMarkerCount(scale) > MAX_MARKERS && scale !== "decades") {
+    const nextIndex = scales.indexOf(scale) + 1;
+    if (nextIndex >= scales.length) break;
+    scale = scales[nextIndex];
+  }
+
+  return scale;
 }
 
 // ─── Scale Helpers ───────────────────────────────────────────────────────────
@@ -299,6 +339,20 @@ export function generateScaleMarkers(
           isMajor: true,
         });
         d.setFullYear(d.getFullYear() + 1);
+      }
+      break;
+    }
+    case "decades": {
+      const decadeStart = Math.floor(start.getFullYear() / 10) * 10;
+      const d = new Date(decadeStart, 0, 1);
+      while (d <= end) {
+        const pos = totalMs ? (d.getTime() - minDate.getTime()) / totalMs : 0;
+        markers.push({
+          label: `${d.getFullYear()}s`,
+          position: pos,
+          isMajor: true,
+        });
+        d.setFullYear(d.getFullYear() + 10);
       }
       break;
     }

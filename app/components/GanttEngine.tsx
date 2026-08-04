@@ -6,7 +6,7 @@ import {
   getDateRange,
   getTaskPosition,
   generateScaleMarkers,
-  detectTimeScale,
+  resolveTimeScale,
 } from "@/lib/ganttParser";
 
 export interface GanttEngineProps {
@@ -25,8 +25,7 @@ export function GanttEngine({
   viewMode = "auto",
 }: GanttEngineProps) {
   const { min, max } = getDateRange(tasks);
-  const effectiveScale: TimeScale =
-    viewMode === "auto" ? detectTimeScale(min, max) : viewMode;
+  const effectiveScale: TimeScale = resolveTimeScale(min, max, viewMode);
   const markers = generateScaleMarkers(min, max, effectiveScale);
 
   const isMini = scale < 0.5;

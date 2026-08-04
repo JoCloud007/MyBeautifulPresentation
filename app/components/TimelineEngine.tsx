@@ -6,7 +6,7 @@ import {
   getTimelineDateRange,
   getEventPosition,
   generateScaleMarkers,
-  detectTimeScale,
+  resolveTimeScale,
 } from "@/lib/ganttParser";
 
 export interface TimelineEngineProps {
@@ -25,8 +25,7 @@ export function TimelineEngine({
   viewMode = "auto",
 }: TimelineEngineProps) {
   const { min, max } = getTimelineDateRange(events);
-  const effectiveScale: TimeScale =
-    viewMode === "auto" ? detectTimeScale(min, max) : viewMode;
+  const effectiveScale: TimeScale = resolveTimeScale(min, max, viewMode);
   const markers = generateScaleMarkers(min, max, effectiveScale);
 
   const isMini = scale < 0.5;
