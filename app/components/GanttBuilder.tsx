@@ -4,8 +4,6 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { GanttTask, TimelineEvent, TimeScale } from "../types/presentation";
 import { useTemplateStore, getActiveTemplate } from "../stores/templateStore";
 import { usePresentationStore } from "../stores/presentationStore";
-import { GanttEngine } from "./GanttEngine";
-import { TimelineEngine } from "./TimelineEngine";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -122,6 +120,47 @@ export function GanttBuilder() {
       }
     }
   }, [currentSlide?.id]);
+
+  // Live sync: update the current slide as the user edits (debounced)
+  useEffect(() => {
+    if (!currentSlide || currentSlide.layout !== mode) return;
+
+    const timer = setTimeout(() => {
+      const effectiveView = viewMode === "auto" ? undefined : viewMode;
+
+      if (mode === "gantt" && tasks.length > 0) {
+        const content = tasks
+          .map((t) => {
+            const parts = [t.name, t.startDate, t.endDate];
+            if (t.color) parts.push(t.color);
+            return parts.join(" | ");
+          })
+          .join("\n");
+        updateSlide(currentSlideIndex, {
+          layout: "gantt",
+          title: currentSlide.title || "Diagramme de Gantt",
+          content,
+          data: { gantt: { tasks, viewMode: effectiveView } },
+        });
+      } else if (mode === "timeline" && events.length > 0) {
+        const content = events
+          .map((e) => {
+            let line = `${e.date} - ${e.title}`;
+            if (e.description) line += ` - ${e.description}`;
+            return line;
+          })
+          .join("\n");
+        updateSlide(currentSlideIndex, {
+          layout: "timeline",
+          title: currentSlide.title || "Timeline",
+          content,
+          data: { timeline: { events, viewMode: effectiveView } },
+        });
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [tasks, events, viewMode, mode, currentSlide, currentSlideIndex, updateSlide]);
 
   // ─── GANTT actions ───────────────────────────────────────────────────────
 
@@ -273,10 +312,9 @@ export function GanttBuilder() {
     <div className="flex flex-col h-full bg-background text-foreground">
       {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar */}
+        {/* Editor sidebar */}
         <div
-          className="flex flex-col h-full border-r overflow-hidden"
-          style={{ width: "40%", minWidth: 280 }}
+          className="flex flex-col h-full overflow-hidden flex-1"
         >
           {/* Header: mode toggle + view selector */}
           <div
@@ -519,52 +557,6 @@ export function GanttBuilder() {
           </ScrollArea>
         </div>
 
-        {/* Right preview area */}
-        <div
-          className="flex flex-col h-full overflow-hidden"
-          style={{ width: "60%" }}
-        >
-          <div
-            className="flex items-center justify-between px-3 py-2 border-b text-xs font-medium flex-shrink-0"
-            style={{ borderColor: colors.border }}
-          >
-            <span>Aperçu</span>
-            <span className="text-muted-foreground">
-              {mode === "gantt"
-                ? `${tasks.length} tâche${tasks.length > 1 ? "s" : ""}`
-                : `${events.length} événement${events.length > 1 ? "s" : ""}`}
-            </span>
-          </div>
-          <div className="flex-1 overflow-hidden p-2">
-            {mode === "gantt" ? (
-              <div
-                className="w-full h-full rounded-lg border overflow-hidden"
-                style={{ borderColor: colors.border }}
-              >
-                <GanttEngine
-                  tasks={tasks}
-                  colors={colors}
-                  fonts={fonts}
-                  scale={1}
-                  viewMode={viewMode}
-                />
-              </div>
-            ) : (
-              <div
-                className="w-full h-full rounded-lg border overflow-hidden"
-                style={{ borderColor: colors.border }}
-              >
-                <TimelineEngine
-                  events={events}
-                  colors={colors}
-                  fonts={fonts}
-                  scale={1}
-                  viewMode={viewMode}
-                />
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Bottom bar */}
