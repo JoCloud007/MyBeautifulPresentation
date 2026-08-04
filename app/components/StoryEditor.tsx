@@ -25,8 +25,8 @@ import { importPPTX } from "@/lib/pptxImport";
 import {
   buildStorytellingPrompt,
   parseLlmSlidesResponse,
-  streamOllamaChat,
-  callOllamaChat,
+  streamLlmChat,
+  callLlmChat,
   checkLlmAvailability,
   normalizeLayout,
 } from "@/lib/llm";
@@ -96,7 +96,7 @@ export function StoryEditor() {
       if (streamMode) {
         // Streaming mode
         abortRef.current = new AbortController();
-        const generator = streamOllamaChat(config, messages, abortRef.current.signal);
+        const generator = streamLlmChat(config, messages, abortRef.current.signal);
         let accumulated = "";
 
         try {
@@ -133,7 +133,7 @@ export function StoryEditor() {
         }
       } else {
         // Non-streaming mode
-        const raw = await callOllamaChat(config, messages);
+        const raw = await callLlmChat(config, messages);
         setRawResponse(raw);
         const parsed = parseLlmSlidesResponse(raw);
 
