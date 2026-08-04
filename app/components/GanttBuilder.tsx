@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { GanttTask, TimelineEvent, TimeScale } from "../types/presentation";
 import { useTemplateStore, getActiveTemplate } from "../stores/templateStore";
 import { usePresentationStore } from "../stores/presentationStore";
@@ -67,9 +67,32 @@ export function GanttBuilder() {
 
   const template = useTemplateStore(getActiveTemplate);
   const addSlide = usePresentationStore((s) => s.addSlide);
+  const presentation = usePresentationStore((s) => s.presentation);
+  const currentSlideIndex = usePresentationStore((s) => s.currentSlideIndex);
+  const currentSlide = presentation?.slides[currentSlideIndex];
 
   const colors = template.colors;
   const fonts = template.fonts;
+
+  // Load data from current slide when it changes
+  useEffect(() => {
+    if (!currentSlide) return;
+    if (currentSlide.layout === "gantt") {
+      const slideTasks = currentSlide.data?.gantt?.tasks;
+      if (slideTasks && slideTasks.length > 0) {
+        setMode("gantt");
+        setTasks(slideTasks);
+        setViewMode(currentSlide.data?.gantt?.viewMode || "auto");
+      }
+    } else if (currentSlide.layout === "timeline") {
+      const slideEvents = currentSlide.data?.timeline?.events;
+      if (slideEvents && slideEvents.length > 0) {
+        setMode("timeline");
+        setEvents(slideEvents);
+        setViewMode(currentSlide.data?.timeline?.viewMode || "auto");
+      }
+    }
+  }, [currentSlide?.id]);
 
   // ─── GANTT actions ───────────────────────────────────────────────────────
 
