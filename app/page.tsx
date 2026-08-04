@@ -8,7 +8,8 @@ import { SlideViewer } from "./components/SlideViewer";
 import { SlideThumbnails } from "./components/SlideThumbnails";
 import { TemplateSelector } from "./components/TemplateSelector";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Wand2, Pencil } from "lucide-react";
+import { TemplateEditor } from "./components/TemplateEditor";
+import { Wand2, Pencil, Palette } from "lucide-react";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("story");
@@ -35,6 +36,10 @@ export default function Home() {
                   <Pencil className="h-3.5 w-3.5" />
                   Éditeur
                 </TabsTrigger>
+                <TabsTrigger value="template" className="gap-1.5 text-xs">
+                  <Palette className="h-3.5 w-3.5" />
+                  Template
+                </TabsTrigger>
               </TabsList>
             </div>
             <TabsContent value="story" className="flex-1 overflow-hidden mt-0">
@@ -42,6 +47,9 @@ export default function Home() {
             </TabsContent>
             <TabsContent value="editor" className="flex-1 overflow-hidden mt-0">
               <SlideEditor />
+            </TabsContent>
+            <TabsContent value="template" className="flex-1 overflow-hidden mt-0">
+              <TemplateEditor />
             </TabsContent>
           </Tabs>
         </div>

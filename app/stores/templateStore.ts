@@ -10,6 +10,16 @@ interface TemplateState {
   setActiveTemplate: (id: string) => void;
   addCustomTemplate: (template: Template) => void;
   removeCustomTemplate: (id: string) => void;
+  updateTemplate: (id: string, updates: Partial<Template>) => void;
+  cloneTemplate: (baseId: string, newName: string) => string;
+}
+
+function generateUUID(): string {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
 
 export const builtInTemplates: Record<TemplateId, Template> = {
@@ -31,6 +41,10 @@ export const builtInTemplates: Record<TemplateId, Template> = {
       heading: "Geist, system-ui, sans-serif",
       body: "Geist, system-ui, sans-serif",
     },
+    fontSizes: { heading: 48, body: 18 },
+    background: { type: "color", color: "#ffffff", opacity: 100 },
+    header: { text: "", enabled: false, showDate: false },
+    footer: { text: "", enabled: false, showPageNumber: false, showDate: false },
     defaultSlides: [
       { layout: "title" },
       { layout: "title-content" },
@@ -55,6 +69,10 @@ export const builtInTemplates: Record<TemplateId, Template> = {
       heading: "Geist, system-ui, sans-serif",
       body: "Geist, system-ui, sans-serif",
     },
+    fontSizes: { heading: 48, body: 18 },
+    background: { type: "color", color: "#0f172a", opacity: 100 },
+    header: { text: "", enabled: false, showDate: false },
+    footer: { text: "", enabled: false, showPageNumber: false, showDate: false },
     defaultSlides: [
       { layout: "title" },
       { layout: "title-content" },
@@ -79,6 +97,10 @@ export const builtInTemplates: Record<TemplateId, Template> = {
       heading: "Geist, system-ui, sans-serif",
       body: "Geist, system-ui, sans-serif",
     },
+    fontSizes: { heading: 48, body: 18 },
+    background: { type: "color", color: "#fafafa", opacity: 100 },
+    header: { text: "", enabled: false, showDate: false },
+    footer: { text: "", enabled: false, showPageNumber: false, showDate: false },
     defaultSlides: [
       { layout: "title" },
       { layout: "title-only" },
@@ -104,6 +126,35 @@ export const useTemplateStore = create<TemplateState>()(
         set((state) => ({
           customTemplates: state.customTemplates.filter((t) => t.id !== id),
         })),
+
+      updateTemplate: (id, updates) =>
+        set((state) => ({
+          customTemplates: state.customTemplates.map((t) =>
+            t.id === id ? { ...t, ...updates } : t
+          ),
+        })),
+
+      cloneTemplate: (baseId, newName) => {
+        let newId = "";
+        set((state) => {
+          const base =
+            builtInTemplates[baseId as TemplateId] ||
+            state.customTemplates.find((t) => t.id === baseId);
+          if (!base) return state;
+          newId = generateUUID();
+          const cloned: Template = {
+            ...base,
+            id: newId,
+            name: newName,
+            description: `Copie de ${base.name}`,
+          };
+          return {
+            customTemplates: [...state.customTemplates, cloned],
+            activeTemplateId: newId,
+          };
+        });
+        return newId;
+      },
     }),
     {
       name: "mybp-templates",

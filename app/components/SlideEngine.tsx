@@ -23,26 +23,95 @@ export function SlideEngine({
   className,
   interactive = false,
 }: SlideEngineProps) {
-  const { colors, fonts } = template;
+  const { colors, fonts, background, header, footer } = template;
+  const isMini = scale < 0.5;
+
+  const bg = background || { type: "color" as const, color: colors.background, opacity: 100 };
+  const hdr = header || { text: "", enabled: false, showDate: false };
+  const ftr = footer || { text: "", enabled: false, showPageNumber: false, showDate: false };
+
+  const showHeader = hdr.enabled && !isMini;
+  const showFooter = ftr.enabled && !isMini;
+  const headerHeight = showHeader ? 28 : 0;
+  const footerHeight = showFooter ? 24 : 0;
 
   const baseStyle: React.CSSProperties = {
     fontFamily: fonts.body,
-    backgroundColor: colors.background,
+    backgroundColor: bg.type === "color" ? bg.color : colors.background,
     color: colors.foreground,
   };
 
   return (
     <div
-      className={cn("w-full h-full overflow-hidden", className)}
+      className={cn("w-full h-full overflow-hidden relative", className)}
       style={baseStyle}
       data-layout={slide.layout}
       data-interactive={interactive}
     >
-      <LayoutRenderer
-        slide={slide}
-        template={template}
-        scale={scale}
-      />
+      {/* Background image layer */}
+      {bg.type === "image" && bg.imageUrl && (
+        <div
+          className="absolute inset-0 bg-cover bg-center pointer-events-none"
+          style={{
+            backgroundImage: `url(${bg.imageUrl})`,
+            opacity: (bg.opacity || 100) / 100,
+          }}
+        />
+      )}
+
+      {/* Header */}
+      {showHeader && (
+        <div
+          className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-[4%] text-[10px]"
+          style={{
+            height: headerHeight,
+            color: colors.secondary,
+            borderBottom: `1px solid ${colors.border}`,
+            backgroundColor: colors.background,
+          }}
+        >
+          <span style={{ fontFamily: fonts.body }}>{hdr.text}</span>
+          {hdr.showDate && (
+            <span style={{ fontFamily: fonts.body }}>
+              {new Date().toLocaleDateString("fr-FR")}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Content */}
+      <div
+        className="relative z-0 h-full"
+        style={{
+          paddingTop: headerHeight,
+          paddingBottom: footerHeight,
+        }}
+      >
+        <LayoutRenderer
+          slide={slide}
+          template={template}
+          scale={scale}
+        />
+      </div>
+
+      {/* Footer */}
+      {showFooter && (
+        <div
+          className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-center text-[10px]"
+          style={{
+            height: footerHeight,
+            color: colors.secondary,
+            borderTop: `1px solid ${colors.border}`,
+            backgroundColor: colors.background,
+          }}
+        >
+          <span style={{ fontFamily: fonts.body }}>
+            {ftr.text}
+            {ftr.showPageNumber && " · {page} / {total}"}
+            {ftr.showDate && ` · ${new Date().toLocaleDateString("fr-FR")}`}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
