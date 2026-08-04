@@ -4,7 +4,6 @@ import { usePresentationStore } from "../stores/presentationStore";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -59,7 +58,7 @@ export function SlideEditor() {
   }
 
   return (
-    <ScrollArea className="h-full">
+    <div className="h-full overflow-y-auto">
       <div className="flex flex-col gap-4 p-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -162,6 +161,6 @@ export function SlideEditor() {
           />
         </div>
       </div>
-    </ScrollArea>
+    </div>
   );
 }

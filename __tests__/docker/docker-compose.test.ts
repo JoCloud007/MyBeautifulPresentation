@@ -86,7 +86,7 @@ describe("Docker Compose & UI Polish — Docker Configuration", () => {
     });
 
     it("sets NODE_ENV to production", () => {
-      expect(composeFile).toContain("NODE_ENV=production");
+      expect(composeFile).toContain("NODE_ENV=${NODE_ENV:-production}");
     });
 
     it("sets NEXT_PUBLIC_APP_URL to port 5182", () => {

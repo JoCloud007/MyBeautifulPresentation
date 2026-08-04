@@ -4,7 +4,6 @@ import { usePresentationStore } from "../stores/presentationStore";
 import { useTemplateStore, getActiveTemplate } from "../stores/templateStore";
 import { SlideEngine } from "./SlideEngine";
 import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import {
   Plus,
@@ -39,7 +38,7 @@ export function SlideThumbnails() {
 
   return (
     <div className="flex flex-col h-full">
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-2 p-3">
           {presentation.slides.map((slide, index) => (
             <div
@@ -115,7 +114,7 @@ export function SlideThumbnails() {
             </div>
           ))}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Add slide button */}
       <div className="p-3 border-t">

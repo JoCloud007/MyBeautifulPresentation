@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
 import {
   FileUp,
@@ -194,7 +193,7 @@ export function StoryEditor() {
 
   return (
     <div className="flex flex-col h-full">
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         <div className="flex flex-col gap-4 p-4">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -379,7 +378,7 @@ export function StoryEditor() {
             )}
           </div>
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Bottom bar */}
       <div className="border-t bg-background p-3 flex flex-col gap-2">
