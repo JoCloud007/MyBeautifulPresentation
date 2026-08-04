@@ -8,7 +8,7 @@ export async function checkLlmAvailability(config: LlmConfig): Promise<boolean> 
     const params = new URLSearchParams({ baseUrl: config.baseUrl, provider: config.provider });
     if (config.apiKey) params.set("apiKey", config.apiKey);
     if (config.skipSslVerification) params.set("skipSslVerification", "true");
-    const res = await fetch(`/api/ollama?${params.toString()}`, {
+    const res = await fetch(`/api/llm?${params.toString()}`, {
       method: "GET",
       signal: controller.signal,
     });
@@ -27,7 +27,7 @@ export async function fetchLlmModels(config: LlmConfig): Promise<string[]> {
     const params = new URLSearchParams({ baseUrl: config.baseUrl, provider: config.provider });
     if (config.apiKey) params.set("apiKey", config.apiKey);
     if (config.skipSslVerification) params.set("skipSslVerification", "true");
-    const res = await fetch(`/api/ollama?${params.toString()}`, {
+    const res = await fetch(`/api/llm?${params.toString()}`, {
       signal: controller.signal,
     });
     if (!res.ok) return [];
@@ -67,7 +67,7 @@ export async function* streamLlmChat(
         },
       };
 
-  const res = await fetch("/api/ollama", {
+  const res = await fetch("/api/llm", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -178,7 +178,7 @@ export async function callLlmChat(
         },
       };
 
-  const res = await fetch("/api/ollama", {
+  const res = await fetch("/api/llm", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

@@ -371,7 +371,7 @@ describe("LLM Storytelling Integration", () => {
       });
       await callOllamaChat(config, messages);
       const [url, options] = mockFetch.mock.calls[0];
-      expect(url).toBe("/api/ollama");
+      expect(url).toBe("/api/llm");
       const body = JSON.parse(options.body);
       expect(body).toMatchObject({
         baseUrl: config.baseUrl,

@@ -196,7 +196,7 @@ async function resolveAndValidateHostname(
   }
 }
 
-function isValidOllamaUrl(url: string): boolean {
+function isValidLlmUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     // Allow http/https only
@@ -210,7 +210,7 @@ function isValidOllamaUrl(url: string): boolean {
   }
 }
 
-function validateOllamaBody(body: Record<string, unknown>): {
+function validateLlmBody(body: Record<string, unknown>): {
   valid: boolean;
   error?: string;
 } {
@@ -218,7 +218,7 @@ function validateOllamaBody(body: Record<string, unknown>): {
     return { valid: false, error: "model is required" };
   }
 
-  // Validate options if present
+  // Validate options if present (Ollama format)
   if (body.options && typeof body.options === "object") {
     const opts = body.options as Record<string, unknown>;
 
@@ -257,6 +257,27 @@ function validateOllamaBody(body: Record<string, unknown>): {
     }
   }
 
+  // Validate top-level temperature / max_tokens (OpenAI format)
+  if (body.temperature !== undefined) {
+    const temp = Number(body.temperature);
+    if (isNaN(temp) || temp < 0 || temp > 2) {
+      return {
+        valid: false,
+        error: "temperature must be between 0 and 2",
+      };
+    }
+  }
+
+  if (body.max_tokens !== undefined) {
+    const num = Number(body.max_tokens);
+    if (isNaN(num) || num < 1 || num > 32768) {
+      return {
+        valid: false,
+        error: "max_tokens must be between 1 and 32768",
+      };
+    }
+  }
+
   // Validate messages if present
   if (body.messages && Array.isArray(body.messages)) {
     for (const msg of body.messages) {
@@ -290,7 +311,7 @@ function sanitizeError(error: unknown): string {
       msg.includes("enotfound") ||
       msg.includes("econnrefused")
     ) {
-      return "Unable to connect to Ollama";
+      return "Unable to connect to LLM";
     }
     return "Proxy request failed";
   }
@@ -359,7 +380,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!isValidOllamaUrl(baseUrl)) {
+    if (!isValidLlmUrl(baseUrl)) {
       return NextResponse.json(
         { error: "Invalid baseUrl" },
         { status: 400 }
@@ -368,7 +389,16 @@ export async function POST(req: NextRequest) {
 
     const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
     const isOpenAI = provider === "openai";
-    const endpoint = isOpenAI ? "/v1/chat/completions" : "/api/chat";
+    // OpenAI baseUrl already includes /v1 (e.g. https://api.openai.com/v1)
+    const endpoint = isOpenAI ? "/chat/completions" : "/api/chat";
+
+    const validation = validateLlmBody(providerBody);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: validation.error },
+        { status: 400 }
+      );
+    }
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -383,7 +413,7 @@ export async function POST(req: NextRequest) {
         method: "POST",
         headers,
         body: JSON.stringify(providerBody),
-        timeout: 60000,
+        timeout: 120000,
         skipSslVerification: !!skipSslVerification,
       }
     );
@@ -432,7 +462,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    if (!isValidOllamaUrl(baseUrl)) {
+    if (!isValidLlmUrl(baseUrl)) {
       return NextResponse.json(
         { error: "Invalid baseUrl" },
         { status: 400 }
@@ -441,7 +471,8 @@ export async function GET(req: NextRequest) {
 
     const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
     const isOpenAI = provider === "openai";
-    const endpoint = isOpenAI ? "/v1/models" : "/api/tags";
+    // OpenAI baseUrl already includes /v1
+    const endpoint = isOpenAI ? "/models" : "/api/tags";
 
     const headers: Record<string, string> = {};
     if (isOpenAI && apiKey) {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { POST, GET } from "@/app/api/ollama/route";
+import { POST, GET } from "@/app/api/llm/route";
 import { NextRequest } from "next/server";
 
 // Mock global fetch for proxy requests
@@ -12,7 +12,7 @@ function createNextRequest(options: {
   body?: unknown;
   json?: () => Promise<unknown>;
 }): NextRequest {
-  const url = options.url || "http://localhost:3000/api/ollama";
+  const url = options.url || "http://localhost:3000/api/llm";
   const req = {
     url,
     method: options.method || "GET",
@@ -192,7 +192,7 @@ describe("Ollama API Route", () => {
       });
 
       const req = createNextRequest({
-        url: "http://localhost:3000/api/ollama?baseUrl=http%3A%2F%2Flocalhost%3A11434",
+        url: "http://localhost:3000/api/llm?baseUrl=http%3A%2F%2Flocalhost%3A11434",
       });
 
       const res = await GET(req);
@@ -212,7 +212,7 @@ describe("Ollama API Route", () => {
 
     it("returns 400 when baseUrl query param is missing", async () => {
       const req = createNextRequest({
-        url: "http://localhost:3000/api/ollama",
+        url: "http://localhost:3000/api/llm",
       });
 
       const res = await GET(req);
@@ -228,7 +228,7 @@ describe("Ollama API Route", () => {
       });
 
       const req = createNextRequest({
-        url: "http://localhost:3000/api/ollama?baseUrl=http%3A%2F%2Flocalhost%3A11434",
+        url: "http://localhost:3000/api/llm?baseUrl=http%3A%2F%2Flocalhost%3A11434",
       });
 
       const res = await GET(req);
@@ -241,7 +241,7 @@ describe("Ollama API Route", () => {
       mockFetch.mockRejectedValueOnce(new Error("Network unreachable"));
 
       const req = createNextRequest({
-        url: "http://localhost:3000/api/ollama?baseUrl=http%3A%2F%2Flocalhost%3A11434",
+        url: "http://localhost:3000/api/llm?baseUrl=http%3A%2F%2Flocalhost%3A11434",
       });
 
       const res = await GET(req);
