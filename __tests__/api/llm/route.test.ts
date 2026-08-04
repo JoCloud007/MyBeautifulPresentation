@@ -67,7 +67,6 @@ describe("Ollama API Route", () => {
           method: "POST",
           headers: expect.objectContaining({
             "Content-Type": "application/json",
-            Host: "localhost",
           }),
           body: expect.stringContaining("llama3.2"),
         })
@@ -203,9 +202,6 @@ describe("Ollama API Route", () => {
         expect.stringMatching(/\/api\/tags$/),
         expect.objectContaining({
           method: "GET",
-          headers: expect.objectContaining({
-            Host: "localhost",
-          }),
         })
       );
     });

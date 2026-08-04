@@ -351,17 +351,10 @@ async function fetchWithDnsPinning(
   const parsed = new URL(url);
   const hostname = parsed.hostname;
 
-  // Validate and resolve hostname
+  // Validate and resolve hostname (anti-SSRF)
   const validation = await resolveAndValidateHostname(hostname);
   if (!validation.valid) {
     throw new Error("Invalid baseUrl: resolved to private/reserved IP");
-  }
-
-  // Rebuild URL with resolved IP if needed, keeping the original Host header
-  let targetUrl = url;
-  if (validation.resolvedIp && validation.resolvedIp !== hostname) {
-    parsed.hostname = validation.resolvedIp;
-    targetUrl = parsed.toString();
   }
 
   // Apply timeout
@@ -370,25 +363,29 @@ async function fetchWithDnsPinning(
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    let fetchInit: RequestInit = {
-      ...init,
-      signal: controller.signal,
-      headers: {
-        ...init.headers,
-        Host: hostname,
-      },
-    };
+    console.log(`[LLM fetch] ${init.method || "GET"} ${url}`);
 
     if (init.skipSslVerification) {
-      const { Agent } = await import("undici");
-      const dispatcher = new Agent({
+      const undici = await import("undici") as unknown as {
+        Agent: new (opts: { connect: { rejectUnauthorized: boolean } }) => unknown;
+        fetch: (url: string, init: unknown) => Promise<Response>;
+      };
+      const dispatcher = new undici.Agent({
         connect: { rejectUnauthorized: false },
       });
-      (fetchInit as Record<string, unknown>).dispatcher = dispatcher;
+      const res = await undici.fetch(url, {
+        ...init,
+        signal: controller.signal,
+        dispatcher,
+      });
+      console.log(`[LLM fetch] Response status: ${res.status}`);
+      return res;
     }
 
-    console.log(`[LLM fetch] ${init.method || "GET"} ${targetUrl}`);
-    const res = await fetch(targetUrl, fetchInit);
+    const res = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
     console.log(`[LLM fetch] Response status: ${res.status}`);
     return res;
   } finally {
