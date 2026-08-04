@@ -150,6 +150,33 @@ export function GanttBuilder() {
     setEvents((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
+  // ─── Conversion actions ──────────────────────────────────────────────────
+
+  const convertToTimeline = useCallback(() => {
+    const converted: TimelineEvent[] = tasks.map((t) => ({
+      id: generateUUID(),
+      date: t.startDate,
+      title: t.name,
+      description: "",
+      color: t.color,
+    }));
+    setEvents(converted);
+    setMode("timeline");
+  }, [tasks]);
+
+  const convertToGantt = useCallback(() => {
+    const converted: GanttTask[] = events.map((e) => ({
+      id: generateUUID(),
+      name: e.title,
+      startDate: e.date,
+      endDate: addDaysISO(e.date, 7),
+      color: e.color,
+      progress: 0,
+    }));
+    setTasks(converted);
+    setMode("gantt");
+  }, [events]);
+
   // ─── Global actions ──────────────────────────────────────────────────────
 
   const handleReset = useCallback(() => {
@@ -225,6 +252,26 @@ export function GanttBuilder() {
               >
                 Timeline
               </Button>
+              {mode === "gantt" && tasks.length > 0 && (
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  onClick={convertToTimeline}
+                  title="Convertir les tâches en événements timeline"
+                >
+                  → Timeline
+                </Button>
+              )}
+              {mode === "timeline" && events.length > 0 && (
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  onClick={convertToGantt}
+                  title="Convertir les événements en tâches GANTT"
+                >
+                  → GANTT
+                </Button>
+              )}
             </div>
 
             <Select
