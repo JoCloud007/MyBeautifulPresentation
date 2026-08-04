@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Toolbar } from "./components/Toolbar";
 import { StoryEditor } from "./components/StoryEditor";
 import { SlideEditor } from "./components/SlideEditor";
@@ -13,8 +13,52 @@ import { GanttBuilder } from "./components/GanttBuilder";
 import { Wand2, Pencil, Palette, BarChart3, MessageCircle } from "lucide-react";
 import { StoryInterview } from "./components/StoryInterview";
 
+function ResizeHandle({ onResize }: { onResize: (delta: number) => void }) {
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleMouseDown = useCallback(() => {
+    setIsDragging(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      onResize(e.movementX);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isDragging, onResize]);
+
+  return (
+    <div
+      onMouseDown={handleMouseDown}
+      className={`w-1 h-full flex-shrink-0 hover:bg-primary/30 active:bg-primary/50 cursor-col-resize transition-colors ${
+        isDragging ? "bg-primary/50" : "bg-transparent"
+      }`}
+      style={{ cursor: "col-resize" }}
+    />
+  );
+}
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState("story");
+  const [leftWidth, setLeftWidth] = useState(380);
+  const [middleWidth, setMiddleWidth] = useState(220);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background">
@@ -22,7 +66,7 @@ export default function Home() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left panel: Editor tabs */}
-        <div className="flex flex-col h-full border-r" style={{ width: "380px", minWidth: "300px", maxWidth: "50vw" }}>
+        <div className="flex flex-col h-full border-r" style={{ width: leftWidth, minWidth: 250, maxWidth: "50vw" }}>
           <Tabs
             value={activeTab}
             onValueChange={setActiveTab}
@@ -70,8 +114,10 @@ export default function Home() {
           </Tabs>
         </div>
 
+        <ResizeHandle onResize={(dx) => setLeftWidth((w) => Math.max(250, Math.min(window.innerWidth * 0.5, w + dx)))} />
+
         {/* Middle panel: Thumbnails + Templates */}
-        <div className="flex flex-col h-full border-r" style={{ width: "220px", minWidth: "180px", maxWidth: "30vw" }}>
+        <div className="flex flex-col h-full border-r" style={{ width: middleWidth, minWidth: 150, maxWidth: "30vw" }}>
           <div className="flex-1 overflow-hidden">
             <SlideThumbnails />
           </div>
@@ -79,6 +125,8 @@ export default function Home() {
             <TemplateSelector />
           </div>
         </div>
+
+        <ResizeHandle onResize={(dx) => setMiddleWidth((w) => Math.max(150, Math.min(window.innerWidth * 0.3, w + dx)))} />
 
         {/* Right panel: Preview */}
         <div className="flex flex-col h-full flex-1">
