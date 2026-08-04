@@ -102,9 +102,9 @@ describe("Docker Compose & UI Polish — Docker Configuration", () => {
       expect(composeFile).toContain("HTTPS_PROXY:");
     });
 
-    it("includes proxy environment variables", () => {
-      expect(composeFile).toContain("HTTP_PROXY=${HTTP_PROXY:-}");
-      expect(composeFile).toContain("HTTPS_PROXY=${HTTPS_PROXY:-}");
+    it("includes proxy environment variables with COMPOSE_ prefix", () => {
+      expect(composeFile).toContain("HTTP_PROXY=${COMPOSE_HTTP_PROXY:-}");
+      expect(composeFile).toContain("HTTPS_PROXY=${COMPOSE_HTTPS_PROXY:-}");
     });
   });
 });

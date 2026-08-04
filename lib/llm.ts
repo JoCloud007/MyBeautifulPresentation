@@ -7,6 +7,7 @@ export async function checkLlmAvailability(config: LlmConfig): Promise<boolean> 
   try {
     const params = new URLSearchParams({ baseUrl: config.baseUrl, provider: config.provider });
     if (config.apiKey) params.set("apiKey", config.apiKey);
+    if (config.skipSslVerification) params.set("skipSslVerification", "true");
     const res = await fetch(`/api/ollama?${params.toString()}`, {
       method: "GET",
       signal: controller.signal,
@@ -25,6 +26,7 @@ export async function fetchLlmModels(config: LlmConfig): Promise<string[]> {
   try {
     const params = new URLSearchParams({ baseUrl: config.baseUrl, provider: config.provider });
     if (config.apiKey) params.set("apiKey", config.apiKey);
+    if (config.skipSslVerification) params.set("skipSslVerification", "true");
     const res = await fetch(`/api/ollama?${params.toString()}`, {
       signal: controller.signal,
     });
@@ -72,6 +74,7 @@ export async function* streamLlmChat(
       baseUrl: config.baseUrl,
       provider: config.provider,
       apiKey: config.apiKey,
+      skipSslVerification: config.skipSslVerification,
       ...body,
     }),
     signal,
@@ -182,6 +185,7 @@ export async function callLlmChat(
       baseUrl: config.baseUrl,
       provider: config.provider,
       apiKey: config.apiKey,
+      skipSslVerification: config.skipSslVerification,
       ...body,
     }),
   });

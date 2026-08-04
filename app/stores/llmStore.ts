@@ -26,6 +26,7 @@ const defaultConfig: LlmConfig = {
   maxTokens: 4096,
   systemPrompt:
     "Tu es un expert en création de présentations PowerPoint. Tu transformes un storytelling en langage naturel en slides structurées. Tu réponds UNIQUEMENT au format JSON avec un tableau de slides. Chaque slide a: title (string), content (string), layout (string parmi: title, title-content, two-column, title-only, content-only). Sois concis et impactant.",
+  skipSslVerification: false,
 };
 
 export const useLlmStore = create<LlmState>()(

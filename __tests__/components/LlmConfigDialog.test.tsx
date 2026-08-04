@@ -18,6 +18,7 @@ describe("LlmConfigDialog — Docker Compose & UI Polish", () => {
         temperature: 0.7,
         maxTokens: 4096,
         systemPrompt: "test prompt",
+        skipSslVerification: false,
       },
       isAvailable: null,
       availableModels: [],

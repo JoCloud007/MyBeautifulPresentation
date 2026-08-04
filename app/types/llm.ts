@@ -8,6 +8,7 @@ export interface LlmConfig {
   maxTokens: number;
   systemPrompt: string;
   apiKey?: string;
+  skipSslVerification?: boolean;
 }
 
 export interface LlmMessage {

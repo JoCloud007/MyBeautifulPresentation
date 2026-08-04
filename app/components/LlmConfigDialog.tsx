@@ -125,6 +125,22 @@ export function LlmConfigDialog() {
             </div>
           )}
 
+          <div className="flex items-center gap-2">
+            <input
+              id="skipSsl"
+              type="checkbox"
+              checked={config.skipSslVerification || false}
+              onChange={(e) => setConfig({ skipSslVerification: e.target.checked })}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <Label htmlFor="skipSsl" className="text-sm cursor-pointer">
+              Ignorer la vérification SSL
+            </Label>
+          </div>
+          <p className="text-[11px] text-muted-foreground -mt-2">
+            Utile derrière un proxy d'entreprise avec inspection SSL.
+          </p>
+
           <div className="grid gap-2">
             <Label htmlFor="model">Modèle</Label>
             <Input

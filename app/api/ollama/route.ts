@@ -299,7 +299,7 @@ function sanitizeError(error: unknown): string {
 
 async function fetchWithDnsPinning(
   url: string,
-  init: RequestInit & { timeout?: number }
+  init: RequestInit & { timeout?: number; skipSslVerification?: boolean }
 ): Promise<Response> {
   const parsed = new URL(url);
   const hostname = parsed.hostname;
@@ -323,16 +323,24 @@ async function fetchWithDnsPinning(
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const res = await fetch(targetUrl, {
+    let fetchInit: RequestInit = {
       ...init,
       signal: controller.signal,
-      // Ensure Host header matches original hostname for virtual hosting
       headers: {
         ...init.headers,
         Host: hostname,
       },
-    });
+    };
 
+    if (init.skipSslVerification) {
+      const { Agent } = await import("undici");
+      const dispatcher = new Agent({
+        connect: { rejectUnauthorized: false },
+      });
+      (fetchInit as Record<string, unknown>).dispatcher = dispatcher;
+    }
+
+    const res = await fetch(targetUrl, fetchInit);
     return res;
   } finally {
     clearTimeout(timeoutId);
@@ -342,7 +350,7 @@ async function fetchWithDnsPinning(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { baseUrl, provider, apiKey, ...providerBody } = body;
+    const { baseUrl, provider, apiKey, skipSslVerification, ...providerBody } = body;
 
     if (!baseUrl || typeof baseUrl !== "string") {
       return NextResponse.json(
@@ -376,6 +384,7 @@ export async function POST(req: NextRequest) {
         headers,
         body: JSON.stringify(providerBody),
         timeout: 60000,
+        skipSslVerification: !!skipSslVerification,
       }
     );
 
@@ -414,6 +423,7 @@ export async function GET(req: NextRequest) {
     const baseUrl = searchParams.get("baseUrl");
     const provider = searchParams.get("provider");
     const apiKey = searchParams.get("apiKey");
+    const skipSslVerification = searchParams.get("skipSslVerification") === "true";
 
     if (!baseUrl || typeof baseUrl !== "string") {
       return NextResponse.json(
@@ -444,6 +454,7 @@ export async function GET(req: NextRequest) {
         method: "GET",
         headers,
         timeout: 10000,
+        skipSslVerification,
       }
     );
 
