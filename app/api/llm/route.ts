@@ -337,9 +337,9 @@ function sanitizeError(error: unknown): string {
   return "An unexpected error occurred";
 }
 
-function getErrorDetails(error: unknown): { message: string; stack?: string } {
+function getErrorDetails(error: unknown): { message: string; stack?: string; cause?: unknown } {
   if (error instanceof Error) {
-    return { message: error.message, stack: error.stack };
+    return { message: error.message, stack: error.stack, cause: (error as Error & { cause?: unknown }).cause };
   }
   return { message: String(error) };
 }
@@ -470,6 +470,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     const details = getErrorDetails(error);
     console.error("[LLM API POST] Error:", details.message);
+    if (details.cause) console.error("[LLM API POST] Cause:", details.cause);
     if (details.stack) console.error(details.stack);
 
     const devInfo = process.env.NODE_ENV === "development" ? details : undefined;
@@ -535,6 +536,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     const details = getErrorDetails(error);
     console.error("[LLM API GET] Error:", details.message);
+    if (details.cause) console.error("[LLM API GET] Cause:", details.cause);
     if (details.stack) console.error(details.stack);
 
     const devInfo = process.env.NODE_ENV === "development" ? details : undefined;
