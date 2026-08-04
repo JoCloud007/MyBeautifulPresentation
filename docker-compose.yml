@@ -12,7 +12,7 @@ services:
     ports:
       - "5182:3000"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
       - NEXT_PUBLIC_APP_URL=http://localhost:5182
       - HTTP_PROXY=${COMPOSE_HTTP_PROXY:-}
       - HTTPS_PROXY=${COMPOSE_HTTPS_PROXY:-}
