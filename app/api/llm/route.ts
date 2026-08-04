@@ -145,21 +145,17 @@ async function resolveAndValidateHostname(
 ): Promise<{ valid: boolean; resolvedIp?: string }> {
   // Check raw hostname first
   if (isPrivateOrReservedIPv6(hostname)) {
-    return {
-      valid: process.env.NODE_ENV === "development",
-      resolvedIp: hostname,
-    };
+    const ok = process.env.NODE_ENV === "development";
+    console.log(`[DNS] IPv6 ${hostname} private=${!ok}, NODE_ENV=${process.env.NODE_ENV}`);
+    return { valid: ok, resolvedIp: hostname };
   }
 
   // Try numeric IP variants
   const numericIp = parseNumericIp(hostname);
   if (numericIp) {
-    return {
-      valid:
-        process.env.NODE_ENV === "development" ||
-        !isPrivateOrReservedIp(numericIp),
-      resolvedIp: numericIp,
-    };
+    const ok = process.env.NODE_ENV === "development" || !isPrivateOrReservedIp(numericIp);
+    console.log(`[DNS] Numeric IP ${hostname} → ${numericIp} private=${!ok}, NODE_ENV=${process.env.NODE_ENV}`);
+    return { valid: ok, resolvedIp: numericIp };
   }
 
   // Check if it's already an IP literal
@@ -169,49 +165,59 @@ async function resolveAndValidateHostname(
   if (ipv4Match) {
     const ip = hostname;
     if (isCloudMetadataIp(ip)) {
+      console.log(`[DNS] Cloud metadata IP blocked: ${ip}`);
       return { valid: false, resolvedIp: ip };
     }
-    return {
-      valid:
-        process.env.NODE_ENV === "development" ||
-        !isPrivateOrReservedIp(ip),
-      resolvedIp: ip,
-    };
+    const ok = process.env.NODE_ENV === "development" || !isPrivateOrReservedIp(ip);
+    console.log(`[DNS] IPv4 literal ${ip} private=${!ok}, NODE_ENV=${process.env.NODE_ENV}`);
+    return { valid: ok, resolvedIp: ip };
   }
 
   // For hostnames, perform DNS resolution and validate the result
   try {
     const dns = await import("dns");
     const addresses = await dns.promises.resolve4(hostname);
-    if (addresses.length === 0) return { valid: false };
+    console.log(`[DNS] resolve4(${hostname}) → ${addresses.join(", ")}`);
+    if (addresses.length === 0) {
+      console.log(`[DNS] No A records for ${hostname}, allowing fetch to fail naturally`);
+      return { valid: true };
+    }
 
     for (const ip of addresses) {
-      if (isCloudMetadataIp(ip) || isPrivateOrReservedIp(ip)) {
-        return {
-          valid: process.env.NODE_ENV === "development",
-          resolvedIp: ip,
-        };
+      if (isCloudMetadataIp(ip)) {
+        console.log(`[DNS] Cloud metadata IP blocked: ${ip}`);
+        return { valid: false, resolvedIp: ip };
+      }
+      if (isPrivateOrReservedIp(ip)) {
+        const ok = process.env.NODE_ENV === "development";
+        console.log(`[DNS] Private IP ${ip} for ${hostname} allowed=${ok}, NODE_ENV=${process.env.NODE_ENV}`);
+        return { valid: ok, resolvedIp: ip };
       }
     }
     return { valid: true, resolvedIp: addresses[0] };
-  } catch {
-    // DNS resolution failed - could be IPv6 only or invalid hostname
+  } catch (err) {
+    console.log(`[DNS] resolve4(${hostname}) failed:`, (err as Error).message);
+    // Try IPv6
     try {
       const dns = await import("dns");
       const addresses = await dns.promises.resolve6(hostname);
-      if (addresses.length === 0) return { valid: false };
+      console.log(`[DNS] resolve6(${hostname}) → ${addresses.join(", ")}`);
+      if (addresses.length === 0) {
+        console.log(`[DNS] No AAAA records for ${hostname}, allowing fetch to fail naturally`);
+        return { valid: true };
+      }
       for (const ip of addresses) {
         if (isPrivateOrReservedIPv6(ip)) {
-          return {
-            valid: process.env.NODE_ENV === "development",
-            resolvedIp: ip,
-          };
+          const ok = process.env.NODE_ENV === "development";
+          console.log(`[DNS] Private IPv6 ${ip} for ${hostname} allowed=${ok}, NODE_ENV=${process.env.NODE_ENV}`);
+          return { valid: ok, resolvedIp: ip };
         }
       }
       return { valid: true, resolvedIp: addresses[0] };
-    } catch {
-      // Cannot resolve - block to be safe
-      return { valid: false };
+    } catch (err6) {
+      console.log(`[DNS] resolve6(${hostname}) failed:`, (err6 as Error).message);
+      console.log(`[DNS] Allowing fetch to fail naturally for ${hostname}`);
+      return { valid: true };
     }
   }
 }
