@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useTemplateStore, getActiveTemplate, builtInTemplates } from "../stores/templateStore";
+import { usePresentationStore } from "../stores/presentationStore";
 import { Template, TemplateColor, TemplateBackground, TemplateHeader, TemplateFooter } from "../types/template";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -182,7 +183,11 @@ export function TemplateEditor() {
     [updateBackground, workingTemplate.background?.opacity]
   );
 
-  const previewSlide = {
+  const presentation = usePresentationStore((s) => s.presentation);
+  const currentSlideIndex = usePresentationStore((s) => s.currentSlideIndex);
+  const currentSlide = presentation?.slides[currentSlideIndex];
+
+  const previewSlide = currentSlide || {
     id: "preview",
     layout: previewLayout as any,
     title: "Bienvenue",
