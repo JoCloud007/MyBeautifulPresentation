@@ -5,6 +5,26 @@ function normalizeBaseUrl(url: string): string {
 }
 
 /**
+ * Strip known endpoint paths that users sometimes paste into baseUrl.
+ * e.g. "https://api.openai.com/v1/chat/completions" → "https://api.openai.com/v1"
+ */
+function cleanBaseUrl(url: string): string {
+  let cleaned = normalizeBaseUrl(url);
+  const pathsToStrip = [
+    "/chat/completions",
+    "/models",
+    "/api/chat",
+    "/api/tags",
+  ];
+  for (const path of pathsToStrip) {
+    if (cleaned.toLowerCase().endsWith(path.toLowerCase())) {
+      cleaned = cleaned.slice(0, -path.length);
+    }
+  }
+  return normalizeBaseUrl(cleaned);
+}
+
+/**
  * Parse a hostname string that might be in decimal, octal, or hex notation.
  * Returns the normalized IPv4 string or null if not a numeric IP.
  */
@@ -387,7 +407,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+    const normalizedBaseUrl = cleanBaseUrl(baseUrl);
     const isOpenAI = provider === "openai";
     // OpenAI baseUrl already includes /v1 (e.g. https://api.openai.com/v1)
     const endpoint = isOpenAI ? "/chat/completions" : "/api/chat";
@@ -419,8 +439,9 @@ export async function POST(req: NextRequest) {
     );
 
     if (!res.ok) {
+      const errorText = await res.text().catch(() => "No response body");
       return NextResponse.json(
-        { error: `Provider error: ${res.status}` },
+        { error: `Provider error ${res.status}: ${errorText.slice(0, 500)}` },
         { status: res.status }
       );
     }
@@ -469,7 +490,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
+    const normalizedBaseUrl = cleanBaseUrl(baseUrl);
     const isOpenAI = provider === "openai";
     // OpenAI baseUrl already includes /v1
     const endpoint = isOpenAI ? "/models" : "/api/tags";
@@ -490,8 +511,9 @@ export async function GET(req: NextRequest) {
     );
 
     if (!res.ok) {
+      const errorText = await res.text().catch(() => "No response body");
       return NextResponse.json(
-        { error: `Provider error: ${res.status}` },
+        { error: `Provider error ${res.status}: ${errorText.slice(0, 500)}` },
         { status: res.status }
       );
     }

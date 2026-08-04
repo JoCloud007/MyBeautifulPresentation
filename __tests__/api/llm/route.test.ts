@@ -106,7 +106,7 @@ describe("Ollama API Route", () => {
       const res = await POST(req);
       expect(res.status).toBe(404);
       const data = await res.json();
-      expect(data.error).toContain("Provider error: 404");
+      expect(data.error).toContain("Provider error 404");
     });
 
     it("returns 500 on proxy exception", async () => {
@@ -225,6 +225,7 @@ describe("Ollama API Route", () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 503,
+        text: async () => "Service Unavailable",
       });
 
       const req = createNextRequest({
@@ -234,7 +235,7 @@ describe("Ollama API Route", () => {
       const res = await GET(req);
       expect(res.status).toBe(503);
       const data = await res.json();
-      expect(data.error).toContain("Provider error: 503");
+      expect(data.error).toContain("Provider error 503");
     });
 
     it("returns 500 on proxy exception", async () => {
