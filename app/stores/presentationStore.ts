@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Presentation, Slide, SlideLayout } from "../types/presentation";
 import { getActiveTemplate, useTemplateStore } from "./templateStore";
+import { parseGanttContent, parseTimelineContent } from "../../lib/ganttParser";
 
 function generateUUID(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -73,6 +74,30 @@ const createEmptyPresentation = (): Presentation => {
     updatedAt: Date.now(),
   };
 };
+
+function enrichSlideData(slide: Slide): Slide {
+  if (slide.layout === "gantt" && slide.content.trim()) {
+    try {
+      const tasks = parseGanttContent(slide.content);
+      if (tasks.length > 0) {
+        return { ...slide, data: { gantt: { tasks } } };
+      }
+    } catch {
+      // ignore parsing errors, keep raw content
+    }
+  }
+  if (slide.layout === "timeline" && slide.content.trim()) {
+    try {
+      const events = parseTimelineContent(slide.content);
+      if (events.length > 0) {
+        return { ...slide, data: { timeline: { events } } };
+      }
+    } catch {
+      // ignore parsing errors, keep raw content
+    }
+  }
+  return slide;
+}
 
 const createDefaultSlide = (overrides: Partial<Slide> = {}): Slide => ({
   id: generateUUID(),
@@ -221,7 +246,7 @@ export const usePresentationStore = create<PresentationState>()(
             title,
             subtitle: state.presentation?.subtitle ?? "",
             author: state.presentation?.author ?? "",
-            slides,
+            slides: slides.map(enrichSlideData),
             createdAt: Date.now(),
             updatedAt: Date.now(),
           },

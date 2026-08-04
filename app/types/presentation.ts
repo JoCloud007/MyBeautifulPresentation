@@ -28,15 +28,6 @@ export interface SlideData {
   };
 }
 
-export interface Slide {
-  id: string;
-  title: string;
-  content: string;
-  layout: SlideLayout;
-  data?: SlideData;
-  notes?: string;
-}
-
 export type SlideLayout =
   | "title"
   | "title-content"
@@ -47,6 +38,15 @@ export type SlideLayout =
   | "image-right"
   | "timeline"
   | "gantt";
+
+export interface Slide {
+  id: string;
+  title: string;
+  content: string;
+  layout: SlideLayout;
+  data?: SlideData;
+  notes?: string;
+}
 
 export interface Presentation {
   id: string;
