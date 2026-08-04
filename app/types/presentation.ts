@@ -1,8 +1,39 @@
+export interface GanttTask {
+  id: string;
+  name: string;
+  startDate: string; // ISO 8601 YYYY-MM-DD
+  endDate: string;   // ISO 8601 YYYY-MM-DD
+  color?: string;
+  progress?: number; // 0-100
+}
+
+export interface TimelineEvent {
+  id: string;
+  date: string;      // ISO 8601 YYYY-MM-DD
+  title: string;
+  description?: string;
+  color?: string;
+}
+
+export type TimeScale = "days" | "weeks" | "months" | "quarters" | "years";
+
+export interface SlideData {
+  gantt?: {
+    tasks: GanttTask[];
+    viewMode?: TimeScale;
+  };
+  timeline?: {
+    events: TimelineEvent[];
+    viewMode?: TimeScale;
+  };
+}
+
 export interface Slide {
   id: string;
   title: string;
   content: string;
   layout: SlideLayout;
+  data?: SlideData;
   notes?: string;
 }
 

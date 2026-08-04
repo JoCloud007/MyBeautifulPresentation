@@ -35,6 +35,7 @@ interface PresentationState {
   createFromStory: (title: string, slides: Slide[]) => void;
   updatePresentationMeta: (meta: Partial<Pick<Presentation, "title" | "subtitle" | "author">>) => void;
   setSlideLayout: (index: number, layout: SlideLayout) => void;
+  updateSlideData: (index: number, data: Slide["data"]) => void;
 }
 
 const createEmptyPresentation = (): Presentation => {
@@ -245,6 +246,19 @@ export const usePresentationStore = create<PresentationState>()(
                 ...state.presentation,
                 slides: state.presentation.slides.map((s, i) =>
                   i === index ? { ...s, layout } : s
+                ),
+                updatedAt: Date.now(),
+              }
+            : null,
+        })),
+
+      updateSlideData: (index, data) =>
+        set((state) => ({
+          presentation: state.presentation
+            ? {
+                ...state.presentation,
+                slides: state.presentation.slides.map((s, i) =>
+                  i === index ? { ...s, data } : s
                 ),
                 updatedAt: Date.now(),
               }

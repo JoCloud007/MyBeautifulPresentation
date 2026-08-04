@@ -9,7 +9,8 @@ import { SlideThumbnails } from "./components/SlideThumbnails";
 import { TemplateSelector } from "./components/TemplateSelector";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TemplateEditor } from "./components/TemplateEditor";
-import { Wand2, Pencil, Palette } from "lucide-react";
+import { GanttBuilder } from "./components/GanttBuilder";
+import { Wand2, Pencil, Palette, BarChart3 } from "lucide-react";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("story");
@@ -40,16 +41,23 @@ export default function Home() {
                   <Palette className="h-3.5 w-3.5" />
                   Template
                 </TabsTrigger>
+                <TabsTrigger value="gantt" className="gap-1.5 text-xs">
+                  <BarChart3 className="h-3.5 w-3.5" />
+                  Timeline/GANTT
+                </TabsTrigger>
               </TabsList>
             </div>
             <TabsContent value="story" className="flex-1 overflow-hidden mt-0">
               <StoryEditor />
             </TabsContent>
             <TabsContent value="editor" className="flex-1 overflow-hidden mt-0">
-              <SlideEditor />
+              <SlideEditor onOpenBuilder={() => setActiveTab("gantt")} />
             </TabsContent>
             <TabsContent value="template" className="flex-1 overflow-hidden mt-0">
               <TemplateEditor />
+            </TabsContent>
+            <TabsContent value="gantt" className="flex-1 overflow-hidden mt-0">
+              <GanttBuilder />
             </TabsContent>
           </Tabs>
         </div>

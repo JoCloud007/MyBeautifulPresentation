@@ -1,6 +1,16 @@
 import PptxGenJS from "pptxgenjs";
 import { Presentation } from "@/app/types/presentation";
 import { Template } from "@/app/types/template";
+import {
+  parseGanttContent,
+  parseTimelineContent,
+  getDateRange,
+  getTimelineDateRange,
+  getTaskPosition,
+  getEventPosition,
+  detectTimeScale,
+  generateScaleMarkers,
+} from "@/lib/ganttParser";
 
 function stripHash(color: string): string {
   return color.startsWith("#") ? color.slice(1) : color;
@@ -306,11 +316,7 @@ export function exportToPPTX(
       }
 
       case "timeline": {
-        const events = slide.content
-          .split("\n")
-          .map((l) => l.trim())
-          .filter(Boolean);
-        const total = events.length || 1;
+        const events = slide.data?.timeline?.events ?? parseTimelineContent(slide.content);
 
         // Title
         s.addText(slide.title, {
@@ -332,6 +338,25 @@ export function exportToPPTX(
           h: 0.03,
           fill: { color: accentColor, transparency: 40 },
         });
+
+        if (events.length === 0) {
+          s.addText("Aucun événement", {
+            x: 0.5,
+            y: "45%",
+            w: "90%",
+            h: 0.5,
+            fontSize: 14,
+            color: secondaryColor,
+            align: "center",
+            fontFace: bodyFont,
+          });
+          break;
+        }
+
+        const { min, max } = getTimelineDateRange(events);
+        const scale = detectTimeScale(min, max);
+        const markers = generateScaleMarkers(min, max, scale);
+        const labelInterval = Math.max(1, Math.ceil(markers.length / 10));
 
         // Timeline horizontal line
         s.addShape(pptx.ShapeType.rect, {
@@ -342,24 +367,38 @@ export function exportToPPTX(
           fill: { color: secondaryColor, transparency: 60 },
         });
 
-        // Active segment
-        if (total > 1) {
-          s.addShape(pptx.ShapeType.rect, {
-            x: "8%",
-            y: "52%",
-            w: `${((total - 1) / total) * 84}%`,
-            h: 0.04,
-            fill: { color: accentColor },
-          });
-        }
+        // Scale markers
+        markers.forEach((marker, i) => {
+          const xPos = 8 + marker.position * 84;
+          if (i % labelInterval === 0 || marker.isMajor) {
+            s.addText(marker.label, {
+              x: `${xPos - 5}%`,
+              y: "56%",
+              w: "10%",
+              h: 0.25,
+              fontSize: 8,
+              color: secondaryColor,
+              align: "center",
+              fontFace: bodyFont,
+            });
+          }
+          if (marker.isMajor) {
+            s.addShape(pptx.ShapeType.rect, {
+              x: `${xPos}%`,
+              y: "51%",
+              w: 0.01,
+              h: 0.1,
+              fill: { color: secondaryColor, transparency: 70 },
+            });
+          }
+        });
 
         // Event nodes and labels
         events.forEach((evt, i) => {
-          const sep = evt.indexOf(" - ");
-          const date = sep >= 0 ? evt.slice(0, sep).trim() : "";
-          const desc = sep >= 0 ? evt.slice(sep + 3).trim() : evt;
+          const pos = getEventPosition(evt, min, max);
+          const xPos = 8 + (pos / 100) * 84;
           const isAbove = i % 2 === 0;
-          const xPos = 8 + (i / Math.max(total - 1, 1)) * 84;
+          const eventColor = evt.color ? stripHash(evt.color) : accentColor;
 
           // Node circle
           s.addShape(pptx.ShapeType.ellipse, {
@@ -367,29 +406,42 @@ export function exportToPPTX(
             y: "50.5%",
             w: 0.2,
             h: 0.2,
-            fill: { color: accentColor },
+            fill: { color: eventColor },
           });
 
-          if (date) {
-            s.addText(date, {
+          // Date
+          s.addText(evt.date, {
+            x: `${xPos - 8}%`,
+            y: isAbove ? "36%" : "58%",
+            w: "16%",
+            h: 0.25,
+            fontSize: 9,
+            bold: true,
+            color: eventColor,
+            align: "center",
+            fontFace: bodyFont,
+          });
+
+          // Title
+          s.addText(evt.title, {
+            x: `${xPos - 8}%`,
+            y: isAbove ? "40%" : "62%",
+            w: "16%",
+            h: 0.35,
+            fontSize: 9,
+            color: fgColor,
+            align: "center",
+            fontFace: bodyFont,
+          });
+
+          // Description
+          if (evt.description) {
+            s.addText(evt.description, {
               x: `${xPos - 8}%`,
-              y: isAbove ? "38%" : "58%",
+              y: isAbove ? "44%" : "66%",
               w: "16%",
-              h: 0.3,
-              fontSize: 10,
-              bold: true,
-              color: accentColor,
-              align: "center",
-              fontFace: bodyFont,
-            });
-          }
-          if (desc) {
-            s.addText(desc, {
-              x: `${xPos - 8}%`,
-              y: isAbove ? "43%" : "63%",
-              w: "16%",
-              h: 0.4,
-              fontSize: 9,
+              h: 0.35,
+              fontSize: 8,
               color: secondaryColor,
               align: "center",
               fontFace: bodyFont,
@@ -400,20 +452,7 @@ export function exportToPPTX(
       }
 
       case "gantt": {
-        const tasks = slide.content
-          .split("\n")
-          .map((l) => l.trim())
-          .filter(Boolean)
-          .map((l) => {
-            const parts = l.split("|").map((p) => p.trim());
-            return {
-              name: parts[0] || "",
-              start: parseFloat(parts[1]) || 0,
-              duration: parseFloat(parts[2]) || 1,
-              color: parts[3] || accentColor,
-            };
-          });
-        const maxEnd = Math.max(...tasks.map((t) => t.start + t.duration), 5);
+        const tasks = slide.data?.gantt?.tasks ?? parseGanttContent(slide.content);
 
         // Title
         s.addText(slide.title, {
@@ -436,48 +475,82 @@ export function exportToPPTX(
           fill: { color: accentColor, transparency: 40 },
         });
 
+        if (tasks.length === 0) {
+          s.addText("Aucune tâche", {
+            x: 0.5,
+            y: "45%",
+            w: "90%",
+            h: 0.5,
+            fontSize: 14,
+            color: secondaryColor,
+            align: "center",
+            fontFace: bodyFont,
+          });
+          break;
+        }
+
+        const { min, max } = getDateRange(tasks);
+        const scale = detectTimeScale(min, max);
+        const markers = generateScaleMarkers(min, max, scale);
+        const labelInterval = Math.max(1, Math.ceil(markers.length / 12));
+
+        const chartLeftPct = 30;
+        const chartWidthPct = 65;
+
         // Header row
         s.addText("Tâche", {
           x: 0.5,
           y: 1.3,
           w: "25%",
-          h: 0.35,
+          h: 0.3,
           fontSize: 11,
           bold: true,
           color: secondaryColor,
           fontFace: headingFont,
         });
 
-        // Grid lines and month labels
-        for (let i = 0; i <= maxEnd; i++) {
-          const xPos = 30 + (i / maxEnd) * 65;
-          s.addText(String(i), {
-            x: `${xPos - 2}%`,
-            y: 1.3,
-            w: "4%",
-            h: 0.3,
-            fontSize: 9,
-            color: secondaryColor,
-            align: "center",
-            fontFace: bodyFont,
-          });
-          s.addShape(pptx.ShapeType.rect, {
-            x: `${xPos}%`,
-            y: 1.6,
-            w: 0.01,
-            h: tasks.length * 0.5 + 0.2,
-            fill: { color: secondaryColor, transparency: 70 },
-          });
-        }
+        // Time axis line
+        s.addShape(pptx.ShapeType.rect, {
+          x: `${chartLeftPct}%`,
+          y: 1.6,
+          w: `${chartWidthPct}%`,
+          h: 0.02,
+          fill: { color: secondaryColor, transparency: 60 },
+        });
+
+        // Scale markers and grid lines
+        markers.forEach((marker, i) => {
+          const xPos = chartLeftPct + marker.position * chartWidthPct;
+          if (i % labelInterval === 0 || marker.isMajor) {
+            s.addText(marker.label, {
+              x: `${xPos - 3}%`,
+              y: 1.3,
+              w: "6%",
+              h: 0.25,
+              fontSize: 8,
+              color: secondaryColor,
+              align: "center",
+              fontFace: bodyFont,
+            });
+          }
+          if (marker.isMajor) {
+            s.addShape(pptx.ShapeType.rect, {
+              x: `${xPos}%`,
+              y: 1.6,
+              w: 0.01,
+              h: tasks.length * 0.5 + 0.3,
+              fill: { color: secondaryColor, transparency: 70 },
+            });
+          }
+        });
 
         // Task rows
         tasks.forEach((task, i) => {
-          const yPos = 1.7 + i * 0.5;
-          const barLeft = 30 + (task.start / maxEnd) * 65;
-          const barWidth = (task.duration / maxEnd) * 65;
-          const taskColor = task.color.startsWith("#")
-            ? stripHash(task.color)
-            : accentColor;
+          const yPos = 1.9 + i * 0.5;
+          const pos = getTaskPosition(task, min, max);
+          const barLeft = chartLeftPct + (pos.left / 100) * chartWidthPct;
+          const barWidth = (pos.width / 100) * chartWidthPct;
+          const taskColor = task.color ? stripHash(task.color) : accentColor;
 
           s.addText(task.name, {
             x: 0.5,
@@ -492,7 +565,7 @@ export function exportToPPTX(
           s.addShape(pptx.ShapeType.rect, {
             x: `${barLeft}%`,
             y: yPos + 0.05,
-            w: `${Math.max(barWidth, 2)}%`,
+            w: `${Math.max(barWidth, 0.5)}%`,
             h: 0.25,
             fill: { color: taskColor },
           });
