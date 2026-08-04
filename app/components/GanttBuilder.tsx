@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { GanttTask, TimelineEvent, TimeScale } from "../types/presentation";
 import { useTemplateStore, getActiveTemplate } from "../stores/templateStore";
 import { usePresentationStore } from "../stores/presentationStore";
@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, Plus, RotateCcw, Save } from "lucide-react";
+import { Trash2, Plus, RotateCcw, Save, Undo } from "lucide-react";
 
 function generateUUID(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -68,9 +68,37 @@ export function GanttBuilder() {
 
   const template = useTemplateStore(getActiveTemplate);
   const addSlide = usePresentationStore((s) => s.addSlide);
+  const updateSlide = usePresentationStore((s) => s.updateSlide);
   const presentation = usePresentationStore((s) => s.presentation);
   const currentSlideIndex = usePresentationStore((s) => s.currentSlideIndex);
   const currentSlide = presentation?.slides[currentSlideIndex];
+
+  // ─── Undo history ────────────────────────────────────────────────────────
+  const historyRef = useRef<{ tasks: GanttTask[]; events: TimelineEvent[] }[]>([]);
+  const stateRef = useRef({ tasks, events });
+  const [canUndo, setCanUndo] = useState(false);
+
+  useEffect(() => {
+    stateRef.current = { tasks, events };
+  }, [tasks, events]);
+
+  const saveHistory = useCallback(() => {
+    historyRef.current.push({
+      tasks: [...stateRef.current.tasks],
+      events: [...stateRef.current.events],
+    });
+    if (historyRef.current.length > 20) historyRef.current.shift();
+    setCanUndo(true);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    const prev = historyRef.current.pop();
+    if (prev) {
+      setTasks(prev.tasks);
+      setEvents(prev.events);
+    }
+    setCanUndo(historyRef.current.length > 0);
+  }, []);
 
   const colors = template.colors;
   const fonts = template.fonts;
@@ -98,6 +126,7 @@ export function GanttBuilder() {
   // ─── GANTT actions ───────────────────────────────────────────────────────
 
   const addTask = useCallback(() => {
+    saveHistory();
     const start = todayISO();
     const end = addDaysISO(start, 7);
     const newTask: GanttTask = {
@@ -113,6 +142,7 @@ export function GanttBuilder() {
 
   const updateTask = useCallback(
     (id: string, updates: Partial<GanttTask>) => {
+      saveHistory();
       setTasks((prev) =>
         prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
       );
@@ -121,12 +151,14 @@ export function GanttBuilder() {
   );
 
   const deleteTask = useCallback((id: string) => {
+    saveHistory();
     setTasks((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   // ─── Timeline actions ────────────────────────────────────────────────────
 
   const addEvent = useCallback(() => {
+    saveHistory();
     const newEvent: TimelineEvent = {
       id: generateUUID(),
       date: todayISO(),
@@ -139,6 +171,7 @@ export function GanttBuilder() {
 
   const updateEvent = useCallback(
     (id: string, updates: Partial<TimelineEvent>) => {
+      saveHistory();
       setEvents((prev) =>
         prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
       );
@@ -147,12 +180,14 @@ export function GanttBuilder() {
   );
 
   const deleteEvent = useCallback((id: string) => {
+    saveHistory();
     setEvents((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
   // ─── Conversion actions ──────────────────────────────────────────────────
 
   const convertToTimeline = useCallback(() => {
+    saveHistory();
     const converted: TimelineEvent[] = tasks.map((t) => ({
       id: generateUUID(),
       date: t.startDate,
@@ -165,6 +200,7 @@ export function GanttBuilder() {
   }, [tasks]);
 
   const convertToGantt = useCallback(() => {
+    saveHistory();
     const converted: GanttTask[] = events.map((e) => ({
       id: generateUUID(),
       name: e.title,
@@ -180,14 +216,16 @@ export function GanttBuilder() {
   // ─── Global actions ──────────────────────────────────────────────────────
 
   const handleReset = useCallback(() => {
+    saveHistory();
     setTasks([]);
     setEvents([]);
   }, []);
 
   const handleInsert = useCallback(() => {
+    const effectiveView: TimeScale | undefined =
+      viewMode === "auto" ? undefined : viewMode;
+
     if (mode === "gantt") {
-      const effectiveView: TimeScale | undefined =
-        viewMode === "auto" ? undefined : viewMode;
       const content = tasks
         .map((t) => {
           const parts = [t.name, t.startDate, t.endDate];
@@ -195,15 +233,18 @@ export function GanttBuilder() {
           return parts.join(" | ");
         })
         .join("\n");
-      addSlide({
-        layout: "gantt",
-        title: "Diagramme de Gantt",
+      const slideData = {
+        layout: "gantt" as const,
+        title: currentSlide?.title || "Diagramme de Gantt",
         content,
         data: { gantt: { tasks: [...tasks], viewMode: effectiveView } },
-      });
+      };
+      if (currentSlide) {
+        updateSlide(currentSlideIndex, slideData);
+      } else {
+        addSlide(slideData);
+      }
     } else {
-      const effectiveView: TimeScale | undefined =
-        viewMode === "auto" ? undefined : viewMode;
       const content = events
         .map((e) => {
           let line = `${e.date} - ${e.title}`;
@@ -211,14 +252,19 @@ export function GanttBuilder() {
           return line;
         })
         .join("\n");
-      addSlide({
-        layout: "timeline",
-        title: "Timeline",
+      const slideData = {
+        layout: "timeline" as const,
+        title: currentSlide?.title || "Timeline",
         content,
         data: { timeline: { events: [...events], viewMode: effectiveView } },
-      });
+      };
+      if (currentSlide) {
+        updateSlide(currentSlideIndex, slideData);
+      } else {
+        addSlide(slideData);
+      }
     }
-  }, [mode, tasks, events, viewMode, addSlide]);
+  }, [mode, tasks, events, viewMode, currentSlide, currentSlideIndex, updateSlide, addSlide]);
 
   const canInsert =
     mode === "gantt" ? tasks.length > 0 : events.length > 0;
@@ -526,15 +572,26 @@ export function GanttBuilder() {
         className="flex items-center justify-between px-4 py-2.5 border-t flex-shrink-0"
         style={{ borderColor: colors.border }}
       >
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={handleReset}
-          disabled={tasks.length === 0 && events.length === 0}
-        >
-          <RotateCcw className="size-3.5 mr-1" />
-          Réinitialiser
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleUndo}
+            disabled={!canUndo}
+          >
+            <Undo className="size-3.5 mr-1" />
+            Annuler
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleReset}
+            disabled={tasks.length === 0 && events.length === 0}
+          >
+            <RotateCcw className="size-3.5 mr-1" />
+            Réinitialiser
+          </Button>
+        </div>
 
         <Button
           size="sm"
@@ -542,7 +599,7 @@ export function GanttBuilder() {
           disabled={!canInsert}
         >
           <Save className="size-3.5 mr-1" />
-          Insérer dans la présentation
+          {currentSlide ? "Modifier la slide" : "Insérer dans la présentation"}
         </Button>
       </div>
     </div>
