@@ -10,7 +10,8 @@ import { TemplateSelector } from "./components/TemplateSelector";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TemplateEditor } from "./components/TemplateEditor";
 import { GanttBuilder } from "./components/GanttBuilder";
-import { Wand2, Pencil, Palette, BarChart3 } from "lucide-react";
+import { Wand2, Pencil, Palette, BarChart3, MessageCircle } from "lucide-react";
+import { StoryInterview } from "./components/StoryInterview";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("story");
@@ -33,6 +34,10 @@ export default function Home() {
                   <Wand2 className="h-3.5 w-3.5" />
                   Storytelling
                 </TabsTrigger>
+                <TabsTrigger value="interview" className="gap-1.5 text-xs">
+                  <MessageCircle className="h-3.5 w-3.5" />
+                  Interview
+                </TabsTrigger>
                 <TabsTrigger value="editor" className="gap-1.5 text-xs">
                   <Pencil className="h-3.5 w-3.5" />
                   Éditeur
@@ -49,6 +54,9 @@ export default function Home() {
             </div>
             <TabsContent value="story" className="flex-1 overflow-hidden mt-0">
               <StoryEditor />
+            </TabsContent>
+            <TabsContent value="interview" className="flex-1 overflow-hidden mt-0">
+              <StoryInterview />
             </TabsContent>
             <TabsContent value="editor" className="flex-1 overflow-hidden mt-0">
               <SlideEditor onOpenBuilder={() => setActiveTab("gantt")} />

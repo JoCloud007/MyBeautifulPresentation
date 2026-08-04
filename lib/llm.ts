@@ -157,7 +157,8 @@ export async function* streamLlmChat(
 
 export async function callLlmChat(
   config: LlmConfig,
-  messages: LlmMessage[]
+  messages: LlmMessage[],
+  signal?: AbortSignal
 ): Promise<string> {
   const isOpenAI = config.provider === "openai";
   const body = isOpenAI
@@ -188,6 +189,7 @@ export async function callLlmChat(
       skipSslVerification: config.skipSslVerification,
       ...body,
     }),
+    signal,
   });
 
   if (!res.ok) {
@@ -312,4 +314,62 @@ export function normalizeLayout(layout: string): string {
   ];
   const normalized = String(layout).toLowerCase().trim();
   return validLayouts.includes(normalized) ? normalized : "title-content";
+}
+
+// ─── Interview Prompts ───────────────────────────────────────────────────────
+
+export function buildInterviewQuestionsPrompt(
+  subject: string,
+  config: LlmConfig,
+  template?: Template
+): LlmMessage[] {
+  const templateContext = template
+    ? `Le design suit le template "${template.name}" (${template.description}).`
+    : "";
+
+  const systemPrompt =
+    config.systemPrompt ||
+    "Tu es un expert en storytelling et création de présentations.";
+
+  return [
+    {
+      role: "system",
+      content: `${systemPrompt}\n\nTu aides l'utilisateur à construire un storytelling pour une présentation PowerPoint.\nTu poses des questions courtes et percutantes pour creuser le sujet.\n${templateContext}\n\nRègles:\n1. Réponds UNIQUEMENT avec un objet JSON : { "questions": ["Question 1?", "Question 2?", ...] }\n2. Pose exactement 4 questions maximum.\n3. Les questions doivent être ouvertes et aider à structurer la présentation.\n4. Ne mets pas de markdown dans le JSON.`,
+    },
+    {
+      role: "user",
+      content: `Je veux créer une présentation sur ce sujet :\n\n"""\n${subject}\n"""\n\nPose-moi des questions pour m'aider à construire le storytelling. Réponds uniquement avec le JSON demandé.`,
+    },
+  ];
+}
+
+export function buildInterviewStorytellingPrompt(
+  subject: string,
+  questions: string[],
+  answers: string[],
+  config: LlmConfig,
+  template?: Template
+): LlmMessage[] {
+  const templateContext = template
+    ? `Le design suit le template "${template.name}" (${template.description}). Adapte le ton à ce style.`
+    : "";
+
+  const systemPrompt =
+    config.systemPrompt ||
+    "Tu es un expert en storytelling et création de présentations PowerPoint professionnelles.";
+
+  const qaPairs = questions
+    .map((q, i) => `Q: ${q}\nA: ${answers[i] || ""}`)
+    .join("\n\n");
+
+  return [
+    {
+      role: "system",
+      content: `${systemPrompt}\n\nTu rédiges un storytelling structuré pour une présentation PowerPoint, à partir d'un sujet et de réponses à des questions.\n${templateContext}\n\nRègles:\n1. Le storytelling doit être structuré en sections claires (Introduction, Développement, Conclusion).\n2. Chaque section doit contenir des idées clés sous forme de phrases concises.\n3. Le ton doit être professionnel et impactant.\n4. N'utilise pas de markdown (pas de **, pas de #).\n5. Le texte doit pouvoir être découpé en 3 à 8 slides.`,
+    },
+    {
+      role: "user",
+      content: `Sujet : ${subject}\n\n${qaPairs}\n\nRédige un storytelling structuré pour une présentation PowerPoint à partir de ces éléments.`,
+    },
+  ];
 }

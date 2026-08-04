@@ -16,11 +16,22 @@ function generateUUID(): string {
   });
 }
 
+export type InterviewStep = "idle" | "asking" | "answering" | "generating" | "done";
+
+export interface InterviewState {
+  step: InterviewStep;
+  subject: string;
+  questions: string[];
+  answers: string[];
+  storytelling: string;
+}
+
 interface PresentationState {
   presentation: Presentation | null;
   currentSlideIndex: number;
   isGenerating: boolean;
   storytelling: string;
+  interview: InterviewState;
 
   // Actions
   setPresentation: (presentation: Presentation) => void;
@@ -37,6 +48,13 @@ interface PresentationState {
   updatePresentationMeta: (meta: Partial<Pick<Presentation, "title" | "subtitle" | "author">>) => void;
   setSlideLayout: (index: number, layout: SlideLayout) => void;
   updateSlideData: (index: number, data: Slide["data"]) => void;
+  // Interview actions
+  setInterviewSubject: (subject: string) => void;
+  setInterviewQuestions: (questions: string[]) => void;
+  setInterviewAnswer: (index: number, answer: string) => void;
+  setInterviewStorytelling: (storytelling: string) => void;
+  setInterviewStep: (step: InterviewStep) => void;
+  resetInterview: () => void;
 }
 
 const createEmptyPresentation = (): Presentation => {
@@ -114,6 +132,13 @@ export const usePresentationStore = create<PresentationState>()(
       currentSlideIndex: 0,
       isGenerating: false,
       storytelling: "",
+      interview: {
+        step: "idle",
+        subject: "",
+        questions: [],
+        answers: [],
+        storytelling: "",
+      },
 
       setPresentation: (presentation) =>
         set({ presentation, currentSlideIndex: 0 }),
@@ -289,6 +314,40 @@ export const usePresentationStore = create<PresentationState>()(
               }
             : null,
         })),
+
+      // Interview actions
+      setInterviewSubject: (subject) =>
+        set((state) => ({
+          interview: { ...state.interview, subject, step: "idle" },
+        })),
+
+      setInterviewQuestions: (questions) =>
+        set((state) => ({
+          interview: { ...state.interview, questions, answers: new Array(questions.length).fill(""), step: "answering" },
+        })),
+
+      setInterviewAnswer: (index, answer) =>
+        set((state) => {
+          const newAnswers = [...state.interview.answers];
+          newAnswers[index] = answer;
+          return { interview: { ...state.interview, answers: newAnswers } };
+        }),
+
+      setInterviewStorytelling: (storytelling) =>
+        set((state) => ({
+          interview: { ...state.interview, storytelling, step: "done" },
+          storytelling,
+        })),
+
+      setInterviewStep: (step) =>
+        set((state) => ({
+          interview: { ...state.interview, step },
+        })),
+
+      resetInterview: () =>
+        set({
+          interview: { step: "idle", subject: "", questions: [], answers: [], storytelling: "" },
+        }),
     }),
     {
       name: "mybp-presentation",
