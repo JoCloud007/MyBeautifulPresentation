@@ -371,6 +371,32 @@ async function fetchWithDnsPinning(
   try {
     console.log(`[LLM fetch] ${init.method || "GET"} ${url}`);
 
+    // Detect proxy from environment
+    const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+    const noProxy = process.env.NO_PROXY || "";
+    const shouldUseProxy = proxyUrl && !noProxy.split(",").some((h) => hostname.includes(h.trim()));
+
+    if (shouldUseProxy) {
+      console.log(`[LLM fetch] Using proxy: ${proxyUrl}`);
+      try {
+        const undici = await import("undici") as unknown as {
+          ProxyAgent: new (opts: string | { uri: string }) => unknown;
+          fetch: (url: string, init: unknown) => Promise<Response>;
+        };
+        const dispatcher = new undici.ProxyAgent(proxyUrl);
+        const res = await undici.fetch(url, {
+          ...init,
+          signal: controller.signal,
+          dispatcher,
+        });
+        console.log(`[LLM fetch] Response status: ${res.status}`);
+        return res;
+      } catch (proxyErr) {
+        console.error("[LLM fetch] ProxyAgent failed, falling back to direct:", (proxyErr as Error).message);
+        // Fall through to direct fetch
+      }
+    }
+
     if (init.skipSslVerification) {
       const undici = await import("undici") as unknown as {
         Agent: new (opts: { connect: { rejectUnauthorized: boolean } }) => unknown;
