@@ -322,7 +322,6 @@ function validateLlmBody(body: Record<string, unknown>): {
 
 function sanitizeError(error: unknown): string {
   if (error instanceof Error) {
-    // Only return generic messages, never stack traces or internal details
     const msg = error.message.toLowerCase();
     if (msg.includes("timeout") || msg.includes("abort")) {
       return "Request timeout";
@@ -336,6 +335,13 @@ function sanitizeError(error: unknown): string {
     return "Proxy request failed";
   }
   return "An unexpected error occurred";
+}
+
+function getErrorDetails(error: unknown): { message: string; stack?: string } {
+  if (error instanceof Error) {
+    return { message: error.message, stack: error.stack };
+  }
+  return { message: String(error) };
 }
 
 async function fetchWithDnsPinning(
@@ -381,7 +387,9 @@ async function fetchWithDnsPinning(
       (fetchInit as Record<string, unknown>).dispatcher = dispatcher;
     }
 
+    console.log(`[LLM fetch] ${init.method || "GET"} ${targetUrl}`);
     const res = await fetch(targetUrl, fetchInit);
+    console.log(`[LLM fetch] Response status: ${res.status}`);
     return res;
   } finally {
     clearTimeout(timeoutId);
@@ -463,8 +471,16 @@ export async function POST(req: NextRequest) {
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error) {
+    const details = getErrorDetails(error);
+    console.error("[LLM API POST] Error:", details.message);
+    if (details.stack) console.error(details.stack);
+
+    const devInfo = process.env.NODE_ENV === "development" ? details : undefined;
     const message = sanitizeError(error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: message, details: devInfo },
+      { status: 500 }
+    );
   }
 }
 
@@ -520,7 +536,15 @@ export async function GET(req: NextRequest) {
     const data = await res.json();
     return NextResponse.json(data);
   } catch (error) {
+    const details = getErrorDetails(error);
+    console.error("[LLM API GET] Error:", details.message);
+    if (details.stack) console.error(details.stack);
+
+    const devInfo = process.env.NODE_ENV === "development" ? details : undefined;
     const message = sanitizeError(error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: message, details: devInfo },
+      { status: 500 }
+    );
   }
 }
