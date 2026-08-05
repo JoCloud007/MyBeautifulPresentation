@@ -418,3 +418,30 @@ export function buildBrainstormingPrompt(
     },
   ];
 }
+
+// ─── Mermaid Prompt ────────────────────────────────────────────────────────
+
+export function buildMermaidPrompt(
+  description: string,
+  config: LlmConfig,
+  template?: Template
+): LlmMessage[] {
+  const templateContext = template
+    ? `Le design suit le template "${template.name}" (${template.description}).`
+    : "";
+
+  const systemPrompt =
+    config.systemPrompt ||
+    "Tu es un expert en diagrammes et visualisation de données.";
+
+  return [
+    {
+      role: "system",
+      content: `${systemPrompt}\n\nTu génères du code Mermaid à partir d'une description textuelle.\n${templateContext}\n\nRègles:\n1. Réponds UNIQUEMENT avec du code Mermaid valide (pas d'explications, pas de markdown autour).\n2. Utilise les types de diagrammes appropriés : flowchart, sequenceDiagram, classDiagram, stateDiagram-v2, erDiagram, mindmap, pie, gantt, etc.\n3. Le code doit être propre, bien structuré et utiliser des noms clairs.\n4. Pour les flowcharts, utilise TD (top-down) ou LR (left-right) selon la complexité.\n5. Pour les séquences, définis les participants explicitement.\n6. Pour les class diagrams, montre les relations et les attributs principaux.\n7. Ne mets pas de blocs de code markdown (pas de \`\`\`mermaid).\n8. Assure-toi que la syntaxe Mermaid est valide.`,
+    },
+    {
+      role: "user",
+      content: `Génère un diagramme Mermaid à partir de cette description :\n\n${description}\n\nRéponds uniquement avec le code Mermaid.`,
+    },
+  ];
+}
