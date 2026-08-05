@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Undo, RotateCcw, Save, Plus, Trash2, Loader2, Wand2 } from "lucide-react";
+import { Undo, RotateCcw, Save, Plus, Trash2, Loader2, Wand2, MessageCircle, Send, Bot, User } from "lucide-react";
 import { usePresentationStore } from "../stores/presentationStore";
 import { useTemplateStore, getActiveTemplate } from "../stores/templateStore";
 import { useLlmStore } from "../stores/llmStore";
@@ -135,6 +135,18 @@ export function DiagramBuilder() {
   const [isEvolving, setIsEvolving] = useState(false);
   const [evolveError, setEvolveError] = useState<string | null>(null);
   const evolveAbortRef = useRef<AbortController | null>(null);
+
+  // Chat conversation state
+  interface ChatMessage {
+    role: "user" | "assistant";
+    content: string;
+  }
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [isChatting, setIsChatting] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const chatAbortRef = useRef<AbortController | null>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
 
   // Load from current slide
   useEffect(() => {
@@ -295,6 +307,69 @@ export function DiagramBuilder() {
     }
   }, [evolveInput, isAvailable, code, config, template, saveHistory]);
 
+  const handleChatSend = useCallback(async () => {
+    if (!chatInput.trim() || !isAvailable) return;
+
+    const userContent = chatInput.trim();
+    setChatInput("");
+    setChatError(null);
+
+    const newMessages: ChatMessage[] = [...chatMessages, { role: "user", content: userContent }];
+    setChatMessages(newMessages);
+
+    setIsChatting(true);
+    chatAbortRef.current = new AbortController();
+
+    try {
+      const { buildMermaidChatPrompt } = await import("@/lib/llm");
+      const messages = buildMermaidChatPrompt(code, newMessages, config, template);
+      const raw = await callLlmChat(config, messages, chatAbortRef.current.signal);
+
+      let reply = "";
+      let mermaidCode = "";
+
+      // Try JSON format first
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed.reply) reply = parsed.reply;
+        if (parsed.code) mermaidCode = parsed.code;
+      } catch {
+        // Fallback: extract code from fenced blocks, rest is reply
+        const codeBlockMatch = raw.match(/```(?:mermaid)?\n?([\s\S]*?)```/);
+        if (codeBlockMatch) {
+          mermaidCode = codeBlockMatch[1].trim();
+          reply = raw.replace(codeBlockMatch[0], "").trim();
+        } else {
+          // Try to find mermaid keyword
+          const lines = raw.split("\n");
+          const startIdx = lines.findIndex((l) =>
+            /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|mindmap|pie|gantt|journey|gitGraph|C4Context|requirementDiagram|sankey)/i.test(l.trim())
+          );
+          if (startIdx >= 0) {
+            mermaidCode = lines.slice(startIdx).join("\n").trim();
+            reply = lines.slice(0, startIdx).join("\n").trim();
+          } else {
+            reply = raw.trim();
+          }
+        }
+      }
+
+      setChatMessages([...newMessages, { role: "assistant", content: reply || "Schéma mis à jour." }]);
+
+      if (mermaidCode) {
+        saveHistory();
+        setCode(mermaidCode);
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        setChatError(`Erreur : ${(err as Error).message}`);
+      }
+    } finally {
+      setIsChatting(false);
+      chatAbortRef.current = null;
+    }
+  }, [chatInput, isAvailable, code, chatMessages, config, template, saveHistory]);
+
   const canInsert = code.trim().length > 0;
 
   return (
@@ -375,39 +450,101 @@ export function DiagramBuilder() {
             )}
           </div>
 
-          {/* Evolve by prompt */}
+          {/* Chat conversation */}
           <div
-            className="px-4 py-2.5 border-b shrink-0 space-y-1.5"
-            style={{ borderColor: colors.border }}
+            className="border-b shrink-0 flex flex-col"
+            style={{ borderColor: colors.border, maxHeight: "280px" }}
           >
-            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-              Modifier par prompt
-            </Label>
-            <Textarea
-              value={evolveInput}
-              onChange={(e) => setEvolveInput(e.target.value)}
-              placeholder="Décrivez les modifications à apporter au schéma actuel. Ex: 'Ajouter un nœud de validation entre l'inscription et la confirmation'"
-              className="text-xs min-h-[50px] resize-none"
-              disabled={isEvolving}
-            />
-            <Button
-              size="sm"
-              onClick={handleEvolve}
-              disabled={!evolveInput.trim() || !isAvailable || isEvolving || !code.trim()}
-              className="w-full gap-1.5"
-            >
-              {isEvolving ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Wand2 className="h-3.5 w-3.5" />
+            <div className="px-4 py-2 flex items-center justify-between shrink-0">
+              <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium flex items-center gap-1.5">
+                <MessageCircle className="h-3 w-3" />
+                Conversation
+              </Label>
+              {chatMessages.length > 0 && (
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  onClick={() => setChatMessages([])}
+                  className="h-5 text-[10px]"
+                >
+                  Effacer
+                </Button>
               )}
-              {isEvolving ? "Modification..." : "Modifier le schéma"}
-            </Button>
-            {evolveError && (
-              <div className="text-[11px] text-destructive bg-destructive/10 rounded p-1.5">
-                {evolveError}
+            </div>
+
+            {/* Messages */}
+            <div ref={chatScrollRef} className="flex-1 overflow-y-auto px-4 pb-2 space-y-2 min-h-0">
+              {chatMessages.length === 0 && (
+                <div className="text-[11px] text-muted-foreground text-center py-3">
+                  Discutez avec l'IA pour affiner votre schéma...
+                </div>
+              )}
+              {chatMessages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[90%] rounded-lg px-3 py-2 text-xs leading-relaxed ${
+                      msg.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted border"
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1 opacity-70">
+                      {msg.role === "user" ? (
+                        <User className="h-3 w-3" />
+                      ) : (
+                        <Bot className="h-3 w-3" />
+                      )}
+                      <span className="text-[10px] font-medium">
+                        {msg.role === "user" ? "Vous" : "Assistant"}
+                      </span>
+                    </div>
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              {isChatting && (
+                <div className="flex gap-2">
+                  <div className="bg-muted border rounded-lg px-3 py-2 text-xs">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div className="px-4 py-2 shrink-0 border-t" style={{ borderColor: colors.border }}>
+              <div className="flex gap-2">
+                <Textarea
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleChatSend();
+                    }
+                  }}
+                  placeholder="Votre message..."
+                  className="text-xs min-h-[36px] resize-none flex-1"
+                  disabled={isChatting}
+                />
+                <Button
+                  size="sm"
+                  onClick={handleChatSend}
+                  disabled={!chatInput.trim() || isChatting || !isAvailable}
+                  className="h-9 px-2.5"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                </Button>
               </div>
-            )}
+              {chatError && (
+                <div className="text-[11px] text-destructive bg-destructive/10 rounded p-1.5 mt-1.5">
+                  {chatError}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Title input */}

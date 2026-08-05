@@ -471,3 +471,36 @@ export function buildMermaidEvolvePrompt(
     },
   ];
 }
+
+export function buildMermaidChatPrompt(
+  currentCode: string,
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
+  config: LlmConfig,
+  template?: Template
+): LlmMessage[] {
+  const templateContext = template
+    ? `Le design suit le template "${template.name}" (${template.description}).`
+    : "";
+
+  const systemPrompt =
+    config.systemPrompt ||
+    "Tu es un expert en diagrammes et visualisation de données.";
+
+  const history = messages
+    .slice(0, -1)
+    .map((m) => `${m.role === "user" ? "Utilisateur" : "Assistant"}: ${m.content}`)
+    .join("\n\n");
+
+  const lastMessage = messages[messages.length - 1];
+
+  return [
+    {
+      role: "system",
+      content: `${systemPrompt}\n\nTu participes à une conversation pour concevoir et faire évoluer un diagramme Mermaid.\n${templateContext}\n\nRègles:\n1. Réponds UNIQUEMENT avec un objet JSON : { "reply": "ta réponse conversationnelle", "code": "le code Mermaid mis à jour" }\n2. Le champ 'reply' doit contenir une réponse naturelle et utile à l'utilisateur.\n3. Le champ 'code' doit contenir le code Mermaid complet et valide.\n4. Si l'utilisateur ne demande pas de modification du schéma, garde le code actuel inchangé dans le champ 'code'.\n5. N'utilise pas de markdown dans le JSON.\n6. Assure-toi que la syntaxe Mermaid est valide.`,
+    },
+    {
+      role: "user",
+      content: `Code Mermaid actuel :\n\n${currentCode}\n\n${history ? `Historique de la conversation :\n${history}\n\n` : ""}Nouveau message :\n${lastMessage?.content || ""}\n\nRéponds avec le JSON demandé.`,
+    },
+  ];
+}
