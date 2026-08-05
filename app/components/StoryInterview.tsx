@@ -8,7 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Loader2, MessageCircle, Wand2, RotateCcw, CheckCircle2, ArrowRight } from "lucide-react";
 import { usePresentationStore } from "../stores/presentationStore";
 import { useLlmStore } from "../stores/llmStore";
-import { callLlmChat, buildInterviewQuestionsPrompt, buildInterviewStorytellingPrompt } from "@/lib/llm";
+import {
+  callLlmChat,
+  buildInterviewQuestionsPrompt,
+  buildInterviewStorytellingPrompt,
+  buildStorytellingPrompt,
+  parseLlmSlidesResponse,
+  normalizeLayout,
+} from "@/lib/llm";
 import { useTemplateStore, getActiveTemplate } from "../stores/templateStore";
 import { SlideLayout } from "../types/presentation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -130,10 +137,47 @@ export function StoryInterview() {
     setStorytelling,
   ]);
 
-  const handleUseStorytelling = useCallback(() => {
-    if (!interview.storytelling) return;
+  const handleUseStorytelling = useCallback(async () => {
+    if (!interview.storytelling || !isAvailable) return;
+
+    setError(null);
+    setGenerating(true);
     setStorytelling(interview.storytelling);
-  }, [interview.storytelling, setStorytelling]);
+    abortRef.current = new AbortController();
+
+    try {
+      const messages = buildStorytellingPrompt(interview.storytelling, config, template);
+      const raw = await callLlmChat(config, messages, abortRef.current.signal);
+      const parsed = parseLlmSlidesResponse(raw);
+
+      if (parsed && parsed.slides.length > 0) {
+        const slides = parsed.slides.map((s) => ({
+          id: crypto.randomUUID(),
+          title: s.title || "",
+          content: s.content || "",
+          layout: normalizeLayout(s.layout) as SlideLayout,
+        }));
+        createFromStory(parsed.title || "Présentation", slides);
+      } else {
+        setError("La réponse du LLM n'a pas pu être analysée en slides. Vous pouvez copier le storytelling manuellement.");
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        setError(`Erreur lors de la génération des slides : ${(err as Error).message}`);
+      }
+    } finally {
+      setGenerating(false);
+      abortRef.current = null;
+    }
+  }, [
+    interview.storytelling,
+    isAvailable,
+    config,
+    template,
+    setStorytelling,
+    setGenerating,
+    createFromStory,
+  ]);
 
   const allAnswered = interview.answers.every((a) => a.trim().length > 0);
 
