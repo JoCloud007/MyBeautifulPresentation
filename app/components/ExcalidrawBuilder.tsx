@@ -315,7 +315,7 @@ export function ExcalidrawBuilder() {
 
           {/* Chat conversation */}
           <div
-            className="border-b shrink-0 flex flex-col"
+            className="border-b shrink-0 flex flex-col min-h-[140px] relative z-10 bg-background"
             style={{ borderColor: colors.border, maxHeight: "260px" }}
           >
             <div className="px-4 py-2 flex items-center justify-between shrink-0">
