@@ -10,10 +10,11 @@ import { TemplateSelector } from "./components/TemplateSelector";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TemplateEditor } from "./components/TemplateEditor";
 import { GanttBuilder } from "./components/GanttBuilder";
-import { Wand2, Pencil, Palette, BarChart3, MessageCircle, Lightbulb, GitBranch } from "lucide-react";
+import { Wand2, Pencil, Palette, BarChart3, MessageCircle, Lightbulb, GitBranch, PenTool } from "lucide-react";
 import { StoryInterview } from "./components/StoryInterview";
 import { StoryBrainstorming } from "./components/StoryBrainstorming";
 import { DiagramBuilder } from "./components/DiagramBuilder";
+import { ExcalidrawBuilder } from "./components/ExcalidrawBuilder";
 
 function ResizeHandle({ onResize }: { onResize: (delta: number) => void }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -104,6 +105,10 @@ export default function Home() {
                   <GitBranch className="h-3.5 w-3.5" />
                   Schémas
                 </TabsTrigger>
+                <TabsTrigger value="excalidraw" className="gap-1.5 text-xs">
+                  <PenTool className="h-3.5 w-3.5" />
+                  Excalidraw
+                </TabsTrigger>
               </TabsList>
             </div>
             <TabsContent value="story" className="flex-1 overflow-hidden mt-0">
@@ -126,6 +131,9 @@ export default function Home() {
             </TabsContent>
             <TabsContent value="diagram" className="flex-1 overflow-hidden mt-0">
               <DiagramBuilder />
+            </TabsContent>
+            <TabsContent value="excalidraw" className="flex-1 overflow-hidden mt-0">
+              <ExcalidrawBuilder />
             </TabsContent>
           </Tabs>
         </div>

@@ -38,7 +38,8 @@ export type SlideLayout =
   | "image-right"
   | "timeline"
   | "gantt"
-  | "mermaid";
+  | "mermaid"
+  | "excalidraw";
 
 export interface Slide {
   id: string;

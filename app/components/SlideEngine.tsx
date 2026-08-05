@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { GanttEngine } from "./GanttEngine";
 import { TimelineEngine } from "./TimelineEngine";
 import { MermaidEngine } from "./MermaidEngine";
+import { ExcalidrawEngine } from "./ExcalidrawEngine";
 import { parseGanttContent, parseTimelineContent } from "@/lib/ganttParser";
 
 export interface SlideEngineProps {
@@ -455,6 +456,32 @@ function LayoutRenderer({
           )}
           <div className="flex-1 overflow-hidden">
             <MermaidEngine code={mermaidCode} className="h-full w-full" />
+          </div>
+        </div>
+      );
+    }
+
+    case "excalidraw": {
+      const excalidrawData = slide.content || "{}";
+      return (
+        <div className="flex flex-col h-full px-[5%] py-[4%]">
+          <h2
+            className={cn(
+              "font-bold mb-[2%]",
+              isMini ? "text-[7px]" : "text-[clamp(1rem,2vw,1.6rem)]"
+            )}
+            style={headingStyle}
+          >
+            {slide.title}
+          </h2>
+          {!isMini && (
+            <div
+              className="w-10 h-0.5 rounded-full mb-[2%]"
+              style={{ backgroundColor: colors.accent, opacity: 0.5 }}
+            />
+          )}
+          <div className="flex-1 overflow-hidden">
+            <ExcalidrawEngine data={excalidrawData} className="h-full w-full" />
           </div>
         </div>
       );

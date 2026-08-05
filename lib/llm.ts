@@ -314,6 +314,7 @@ export function normalizeLayout(layout: string): string {
     "timeline",
     "gantt",
     "mermaid",
+    "excalidraw",
   ];
   const normalized = String(layout).toLowerCase().trim();
   return validLayouts.includes(normalized) ? normalized : "title-content";

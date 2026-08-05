@@ -25,6 +25,7 @@ import {
   Timer,
   BarChart3,
   GitBranch,
+  Pencil,
   Wand2,
 } from "lucide-react";
 import { parseGanttContent, parseTimelineContent } from "@/lib/ganttParser";
@@ -40,6 +41,7 @@ const layoutOptions: { value: SlideLayout; label: string; icon: React.ReactNode 
   { value: "timeline", label: "Timeline", icon: <Timer className="w-3.5 h-3.5" /> },
   { value: "gantt", label: "GANTT", icon: <BarChart3 className="w-3.5 h-3.5" /> },
   { value: "mermaid", label: "Diagramme", icon: <GitBranch className="w-3.5 h-3.5" /> },
+  { value: "excalidraw", label: "Excalidraw", icon: <Pencil className="w-3.5 h-3.5" /> },
 ];
 
 interface SlideEditorProps {
