@@ -505,3 +505,66 @@ export function buildMermaidChatPrompt(
     },
   ];
 }
+
+// ─── Excalidraw Prompts ─────────────────────────────────────────────────────
+
+export function buildExcalidrawPrompt(
+  description: string,
+  config: LlmConfig,
+  template?: Template
+): LlmMessage[] {
+  const templateContext = template
+    ? `Le design suit le template "${template.name}" (${template.description}).`
+    : "";
+
+  const systemPrompt =
+    config.systemPrompt ||
+    "Tu es un expert en diagrammes et visualisation de données.";
+
+  return [
+    {
+      role: "system",
+      content: `${systemPrompt}\n\nTu génères des diagrammes Excalidraw à partir d'une description textuelle. Excalidraw est un outil de dessin à main levée.\n${templateContext}\n\nRègles:\n1. Réponds UNIQUEMENT avec un objet JSON : { "reply": "ta réponse", "elements": [...] }\n2. Le champ 'reply' doit contenir une réponse conversationnelle.\n3. Le champ 'elements' est un tableau d'éléments graphiques simplifiés.\n4. Chaque élément a : type (rectangle|ellipse|diamond|text|arrow|line), x, y, width, height, et optionnellement text, strokeColor, backgroundColor.\n5. Pour les flèches : ajoute startX, startY, endX, endY.\n6. Coordonnées : canvas de 800x600. Positionne les éléments de manière espacée (minimum 50px entre eux).\n7. Utilise des couleurs de fond pastel (ex: #e3f2fd, #fce4ec, #f3e5f5, #e8f5e9) pour différencier les zones.\n8. N'utilise pas de markdown dans le JSON.\n9. Assure-toi que le JSON est valide.`,
+    },
+    {
+      role: "user",
+      content: `Génère un diagramme Excalidraw à partir de cette description :\n\n${description}\n\nRéponds avec le JSON demandé.`,
+    },
+  ];
+}
+
+export function buildExcalidrawChatPrompt(
+  currentElements: any[],
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
+  config: LlmConfig,
+  template?: Template
+): LlmMessage[] {
+  const templateContext = template
+    ? `Le design suit le template "${template.name}" (${template.description}).`
+    : "";
+
+  const systemPrompt =
+    config.systemPrompt ||
+    "Tu es un expert en diagrammes et visualisation de données.";
+
+  const history = messages
+    .slice(0, -1)
+    .map((m) => `${m.role === "user" ? "Utilisateur" : "Assistant"}: ${m.content}`)
+    .join("\n\n");
+
+  const lastMessage = messages[messages.length - 1];
+  const elementsSummary = currentElements.map((el) =>
+    `- ${el.type} at (${el.x},${el.y}) size ${el.width}x${el.height}${el.text ? ` text:"${el.text}"` : ""}`
+  ).join("\n");
+
+  return [
+    {
+      role: "system",
+      content: `${systemPrompt}\n\nTu participes à une conversation pour concevoir et faire évoluer un diagramme Excalidraw (dessin à main levée).\n${templateContext}\n\nRègles:\n1. Réponds UNIQUEMENT avec un objet JSON : { "reply": "ta réponse conversationnelle", "elements": [...] }\n2. Le champ 'reply' doit contenir une réponse naturelle et utile.\n3. Le champ 'elements' est un tableau d'éléments graphiques simplifiés qui REMPLACE complètement les éléments actuels.\n4. Chaque élément a : type (rectangle|ellipse|diamond|text|arrow|line), x, y, width, height, et optionnellement text, strokeColor, backgroundColor.\n5. Pour les flèches : ajoute startX, startY, endX, endY.\n6. Canvas de 800x600. Espacement minimum 50px.\n7. Utilise des couleurs de fond pastel.\n8. N'utilise pas de markdown dans le JSON.`,
+    },
+    {
+      role: "user",
+      content: `Éléments actuels :\n${elementsSummary || "(aucun)"}\n\n${history ? `Historique :\n${history}\n\n` : ""}Nouveau message :\n${lastMessage?.content || ""}\n\nRéponds avec le JSON demandé.`,
+    },
+  ];
+}
