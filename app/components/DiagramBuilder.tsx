@@ -131,6 +131,11 @@ export function DiagramBuilder() {
   const [generateError, setGenerateError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  const [evolveInput, setEvolveInput] = useState("");
+  const [isEvolving, setIsEvolving] = useState(false);
+  const [evolveError, setEvolveError] = useState<string | null>(null);
+  const evolveAbortRef = useRef<AbortController | null>(null);
+
   // Load from current slide
   useEffect(() => {
     if (currentSlide?.layout === "mermaid") {
@@ -248,6 +253,48 @@ export function DiagramBuilder() {
     }
   }, [storyInput, isAvailable, config, template, saveHistory]);
 
+  const handleEvolve = useCallback(async () => {
+    if (!evolveInput.trim() || !isAvailable || !code.trim()) return;
+
+    setEvolveError(null);
+    setIsEvolving(true);
+    evolveAbortRef.current = new AbortController();
+
+    try {
+      const { buildMermaidEvolvePrompt } = await import("@/lib/llm");
+      const messages = buildMermaidEvolvePrompt(code, evolveInput, config, template);
+      const raw = await callLlmChat(config, messages, evolveAbortRef.current.signal);
+
+      let mermaidCode = raw.trim();
+      const codeBlockMatch = raw.match(/```(?:mermaid)?\n?([\s\S]*?)```/);
+      if (codeBlockMatch) {
+        mermaidCode = codeBlockMatch[1].trim();
+      } else {
+        const lines = raw.split("\n");
+        const startIdx = lines.findIndex((l) =>
+          /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|mindmap|pie|gantt|journey|gitGraph|C4Context|requirementDiagram|sankey)/i.test(l.trim())
+        );
+        if (startIdx >= 0) {
+          mermaidCode = lines.slice(startIdx).join("\n").trim();
+        }
+      }
+
+      if (mermaidCode) {
+        saveHistory();
+        setCode(mermaidCode);
+      } else {
+        setEvolveError("Le LLM n'a pas généré de code Mermaid valide.");
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        setEvolveError(`Erreur : ${(err as Error).message}`);
+      }
+    } finally {
+      setIsEvolving(false);
+      evolveAbortRef.current = null;
+    }
+  }, [evolveInput, isAvailable, code, config, template, saveHistory]);
+
   const canInsert = code.trim().length > 0;
 
   return (
@@ -324,6 +371,41 @@ export function DiagramBuilder() {
             {generateError && (
               <div className="text-[11px] text-destructive bg-destructive/10 rounded p-1.5">
                 {generateError}
+              </div>
+            )}
+          </div>
+
+          {/* Evolve by prompt */}
+          <div
+            className="px-4 py-2.5 border-b shrink-0 space-y-1.5"
+            style={{ borderColor: colors.border }}
+          >
+            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+              Modifier par prompt
+            </Label>
+            <Textarea
+              value={evolveInput}
+              onChange={(e) => setEvolveInput(e.target.value)}
+              placeholder="Décrivez les modifications à apporter au schéma actuel. Ex: 'Ajouter un nœud de validation entre l'inscription et la confirmation'"
+              className="text-xs min-h-[50px] resize-none"
+              disabled={isEvolving}
+            />
+            <Button
+              size="sm"
+              onClick={handleEvolve}
+              disabled={!evolveInput.trim() || !isAvailable || isEvolving || !code.trim()}
+              className="w-full gap-1.5"
+            >
+              {isEvolving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Wand2 className="h-3.5 w-3.5" />
+              )}
+              {isEvolving ? "Modification..." : "Modifier le schéma"}
+            </Button>
+            {evolveError && (
+              <div className="text-[11px] text-destructive bg-destructive/10 rounded p-1.5">
+                {evolveError}
               </div>
             )}
           </div>

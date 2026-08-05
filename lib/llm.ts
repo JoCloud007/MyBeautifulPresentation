@@ -445,3 +445,29 @@ export function buildMermaidPrompt(
     },
   ];
 }
+
+export function buildMermaidEvolvePrompt(
+  currentCode: string,
+  instruction: string,
+  config: LlmConfig,
+  template?: Template
+): LlmMessage[] {
+  const templateContext = template
+    ? `Le design suit le template "${template.name}" (${template.description}).`
+    : "";
+
+  const systemPrompt =
+    config.systemPrompt ||
+    "Tu es un expert en diagrammes et visualisation de données.";
+
+  return [
+    {
+      role: "system",
+      content: `${systemPrompt}\n\nTu modifies du code Mermaid existant selon les instructions fournies.\n${templateContext}\n\nRègles:\n1. Réponds UNIQUEMENT avec le code Mermaid mis à jour (pas d'explications, pas de markdown autour).\n2. Garde la structure et le type de diagramme du code original sauf si l'instruction demande explicitement de changer.\n3. Applique TOUTES les modifications demandées dans l'instruction.\n4. Ne mets pas de blocs de code markdown (pas de \`\`\`mermaid).\n5. Assure-toi que la syntaxe Mermaid reste valide.`,
+    },
+    {
+      role: "user",
+      content: `Code Mermaid actuel :\n\n${currentCode}\n\nInstructions de modification :\n${instruction}\n\nRéponds uniquement avec le code Mermaid modifié.`,
+    },
+  ];
+}
