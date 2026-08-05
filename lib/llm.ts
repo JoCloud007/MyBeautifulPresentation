@@ -234,7 +234,9 @@ export function buildStorytellingPrompt(
     {
       role: "system",
       content:
-        `${baseSystemPrompt}\n\nRègles STRICTES :\n1. Réponds UNIQUEMENT avec un objet JSON valide contenant 'title' (string) et 'slides' (array).\n2. Chaque slide doit avoir : title (string), content (string), layout (string parmi : title, title-content, two-column, title-only, content-only, image-left, image-right, timeline, gantt).\n3. Maximum 8 slides.\n4. Le titre de la présentation doit être accrocheur et professionnel.\n5. Le contenu de chaque slide doit être concis (idéalement 3-5 points clés ou 2-3 phrases percutantes).\n6. Pour la mise en page 'two-column', utilise le caractère '|' dans le content pour séparer les deux colonnes.\n7. Pour la mise en page 'timeline', chaque événement doit être sur une ligne au format : "YYYY-MM-DD - Titre de l'\u00e9vénement - Description optionnelle".\n8. Pour la mise en page 'gantt', chaque tâche doit être sur une ligne au format : "Nom de la tâche | YYYY-MM-DD (début) | YYYY-MM-DD (fin) | Couleur hex optionnelle".\n9. Utilise 'timeline' quand le storytelling contient une chronologie ou des dates clés. Utilise 'gantt' quand le storytelling décrit un projet avec des tâches sur une période.\n10. Ne mets pas de markdown dans le JSON (pas de **, pas de #, etc.).\n11. Le JSON doit être directement parsable, sans texte avant ou après.${templateContext}`,
+        `${baseSystemPrompt}\n\nRègles STRICTES :\n1. Réponds UNIQUEMENT avec un objet JSON valide contenant 'title' (string) et 'slides' (array).\n2. Chaque slide doit avoir : title (string), content (string), layout (string parmi : title, title-content, two-column, title-only, content-only, image-left, image-right, timeline, gantt, mermaid).\n3. Maximum 8 slides.\n4. Le titre de la présentation doit être accrocheur et professionnel.\n5. Le contenu de chaque slide doit être concis (idéalement 3-5 points clés ou 2-3 phrases percutantes).\n6. Pour la mise en page 'two-column', utilise le caractère '|' dans le content pour séparer les deux colonnes.\n7. Pour la mise en page 'timeline', chaque événement doit être sur une ligne au format : "YYYY-MM-DD - Titre de l'\u00e9vénement - Description optionnelle".\n8. Pour la mise en page 'gantt', chaque tâche doit être sur une ligne au format : "Nom de la tâche | YYYY-MM-DD (début) | YYYY-MM-DD (fin) | Couleur hex optionnelle".\n9. Utilise 'timeline' quand le storytelling contient une chronologie ou des dates clés. Utilise 'gantt' quand le storytelling décrit un projet avec des tâches sur une période. Utilise 'mermaid' quand le storytelling décrit un processus, une architecture, un flux de données, ou tout élément qui se prête à un diagramme. Le content d'une slide 'mermaid' doit contenir du code Mermaid valide (ex: flowchart, sequenceDiagram, classDiagram, stateDiagram-v2, mindmap, etc.).
+10. Ne mets pas de markdown dans le JSON (pas de **, pas de #, etc.).
+11. Le JSON doit être directement parsable, sans texte avant ou après.${templateContext}`,
     },
     {
       role: "user",
@@ -311,6 +313,7 @@ export function normalizeLayout(layout: string): string {
     "image-right",
     "timeline",
     "gantt",
+    "mermaid",
   ];
   const normalized = String(layout).toLowerCase().trim();
   return validLayouts.includes(normalized) ? normalized : "title-content";

@@ -24,6 +24,7 @@ import {
   StickyNote,
   Timer,
   BarChart3,
+  GitBranch,
   Wand2,
 } from "lucide-react";
 import { parseGanttContent, parseTimelineContent } from "@/lib/ganttParser";
@@ -38,6 +39,7 @@ const layoutOptions: { value: SlideLayout; label: string; icon: React.ReactNode 
   { value: "image-right", label: "Image droite", icon: <Image className="w-3.5 h-3.5" aria-hidden="true" /> },
   { value: "timeline", label: "Timeline", icon: <Timer className="w-3.5 h-3.5" /> },
   { value: "gantt", label: "GANTT", icon: <BarChart3 className="w-3.5 h-3.5" /> },
+  { value: "mermaid", label: "Diagramme", icon: <GitBranch className="w-3.5 h-3.5" /> },
 ];
 
 interface SlideEditorProps {

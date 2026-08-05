@@ -10,9 +10,10 @@ import { TemplateSelector } from "./components/TemplateSelector";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TemplateEditor } from "./components/TemplateEditor";
 import { GanttBuilder } from "./components/GanttBuilder";
-import { Wand2, Pencil, Palette, BarChart3, MessageCircle, Lightbulb } from "lucide-react";
+import { Wand2, Pencil, Palette, BarChart3, MessageCircle, Lightbulb, GitBranch } from "lucide-react";
 import { StoryInterview } from "./components/StoryInterview";
 import { StoryBrainstorming } from "./components/StoryBrainstorming";
+import { DiagramBuilder } from "./components/DiagramBuilder";
 
 function ResizeHandle({ onResize }: { onResize: (delta: number) => void }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -99,6 +100,10 @@ export default function Home() {
                   <BarChart3 className="h-3.5 w-3.5" />
                   Timeline/GANTT
                 </TabsTrigger>
+                <TabsTrigger value="diagram" className="gap-1.5 text-xs">
+                  <GitBranch className="h-3.5 w-3.5" />
+                  Schémas
+                </TabsTrigger>
               </TabsList>
             </div>
             <TabsContent value="story" className="flex-1 overflow-hidden mt-0">
@@ -118,6 +123,9 @@ export default function Home() {
             </TabsContent>
             <TabsContent value="gantt" className="flex-1 overflow-hidden mt-0">
               <GanttBuilder />
+            </TabsContent>
+            <TabsContent value="diagram" className="flex-1 overflow-hidden mt-0">
+              <DiagramBuilder />
             </TabsContent>
           </Tabs>
         </div>

@@ -37,7 +37,8 @@ export type SlideLayout =
   | "image-left"
   | "image-right"
   | "timeline"
-  | "gantt";
+  | "gantt"
+  | "mermaid";
 
 export interface Slide {
   id: string;
