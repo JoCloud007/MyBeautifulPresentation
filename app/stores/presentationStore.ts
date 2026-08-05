@@ -26,12 +26,25 @@ export interface InterviewState {
   storytelling: string;
 }
 
+export interface BrainstormMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface BrainstormState {
+  persona: string;
+  subject: string;
+  messages: BrainstormMessage[];
+  storytelling: string;
+}
+
 interface PresentationState {
   presentation: Presentation | null;
   currentSlideIndex: number;
   isGenerating: boolean;
   storytelling: string;
   interview: InterviewState;
+  brainstorm: BrainstormState;
 
   // Actions
   setPresentation: (presentation: Presentation) => void;
@@ -55,6 +68,12 @@ interface PresentationState {
   setInterviewStorytelling: (storytelling: string) => void;
   setInterviewStep: (step: InterviewStep) => void;
   resetInterview: () => void;
+  // Brainstorm actions
+  setBrainstormPersona: (persona: string) => void;
+  setBrainstormSubject: (subject: string) => void;
+  addBrainstormMessage: (message: BrainstormMessage) => void;
+  setBrainstormStorytelling: (storytelling: string) => void;
+  resetBrainstorm: () => void;
 }
 
 const createEmptyPresentation = (): Presentation => {
@@ -137,6 +156,12 @@ export const usePresentationStore = create<PresentationState>()(
         subject: "",
         questions: [],
         answers: [],
+        storytelling: "",
+      },
+      brainstorm: {
+        persona: "auto",
+        subject: "",
+        messages: [],
         storytelling: "",
       },
 
@@ -347,6 +372,36 @@ export const usePresentationStore = create<PresentationState>()(
       resetInterview: () =>
         set({
           interview: { step: "idle", subject: "", questions: [], answers: [], storytelling: "" },
+        }),
+
+      // Brainstorm actions
+      setBrainstormPersona: (persona) =>
+        set((state) => ({
+          brainstorm: { ...state.brainstorm, persona },
+        })),
+
+      setBrainstormSubject: (subject) =>
+        set((state) => ({
+          brainstorm: { ...state.brainstorm, subject },
+        })),
+
+      addBrainstormMessage: (message) =>
+        set((state) => ({
+          brainstorm: {
+            ...state.brainstorm,
+            messages: [...state.brainstorm.messages, message],
+          },
+        })),
+
+      setBrainstormStorytelling: (storytelling) =>
+        set((state) => ({
+          brainstorm: { ...state.brainstorm, storytelling },
+          storytelling,
+        })),
+
+      resetBrainstorm: () =>
+        set({
+          brainstorm: { persona: "auto", subject: "", messages: [], storytelling: "" },
         }),
     }),
     {

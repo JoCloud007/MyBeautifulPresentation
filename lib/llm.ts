@@ -373,3 +373,45 @@ export function buildInterviewStorytellingPrompt(
     },
   ];
 }
+
+// ─── Brainstorming Prompts ───────────────────────────────────────────────────
+
+export interface BrainstormPersona {
+  id: string;
+  name: string;
+  description: string;
+  prompt: string;
+}
+
+export function buildBrainstormingPrompt(
+  subject: string,
+  messages: Array<{ role: "user" | "assistant"; content: string }>,
+  persona: BrainstormPersona,
+  config: LlmConfig,
+  template?: Template
+): LlmMessage[] {
+  const templateContext = template
+    ? `Le design suit le template "${template.name}" (${template.description}). Adapte le ton à ce style.`
+    : "";
+
+  const systemPrompt =
+    config.systemPrompt ||
+    "Tu es un expert en storytelling et création de présentations.";
+
+  const personaPrompt = persona.prompt || `Tu adaptes ton style selon le sujet "${subject}".`;
+
+  const history = messages
+    .map((m) => `${m.role === "user" ? "Utilisateur" : "Assistant"}: ${m.content}`)
+    .join("\n\n");
+
+  return [
+    {
+      role: "system",
+      content: `${systemPrompt}\n\n${personaPrompt}\n${templateContext}\n\nTu participes à une session de brainstorming pour construire un storytelling de présentation.\n\nRègles:\n1. Tu réponds sous forme de conversation naturelle, comme si tu discutais avec l'utilisateur.\n2. Après chaque échange, tu produis également une version mise à jour du storytelling structuré.\n3. Réponds UNIQUEMENT avec un objet JSON : { "reply": "ta réponse conversationnelle", "storytelling": "le storytelling structuré mis à jour" }\n4. Le storytelling doit être structuré en sections (Introduction, Développement, Conclusion) avec des phrases concises.\n5. N'utilise pas de markdown dans le JSON.\n6. Sois constructif, challenge les idées faibles, et propose des améliorations concrètes.`,
+    },
+    {
+      role: "user",
+      content: `Sujet de la présentation : ${subject}\n\n${history ? `Historique de la conversation :\n${history}\n\n` : ""}Continue la session de brainstorming.`,
+    },
+  ];
+}

@@ -10,8 +10,9 @@ import { TemplateSelector } from "./components/TemplateSelector";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TemplateEditor } from "./components/TemplateEditor";
 import { GanttBuilder } from "./components/GanttBuilder";
-import { Wand2, Pencil, Palette, BarChart3, MessageCircle } from "lucide-react";
+import { Wand2, Pencil, Palette, BarChart3, MessageCircle, Lightbulb } from "lucide-react";
 import { StoryInterview } from "./components/StoryInterview";
+import { StoryBrainstorming } from "./components/StoryBrainstorming";
 
 function ResizeHandle({ onResize }: { onResize: (delta: number) => void }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -82,6 +83,10 @@ export default function Home() {
                   <MessageCircle className="h-3.5 w-3.5" />
                   Interview
                 </TabsTrigger>
+                <TabsTrigger value="brainstorm" className="gap-1.5 text-xs">
+                  <Lightbulb className="h-3.5 w-3.5" />
+                  Brainstorming
+                </TabsTrigger>
                 <TabsTrigger value="editor" className="gap-1.5 text-xs">
                   <Pencil className="h-3.5 w-3.5" />
                   Éditeur
@@ -101,6 +106,9 @@ export default function Home() {
             </TabsContent>
             <TabsContent value="interview" className="flex-1 overflow-hidden mt-0">
               <StoryInterview />
+            </TabsContent>
+            <TabsContent value="brainstorm" className="flex-1 overflow-hidden mt-0">
+              <StoryBrainstorming />
             </TabsContent>
             <TabsContent value="editor" className="flex-1 overflow-hidden mt-0">
               <SlideEditor onOpenBuilder={() => setActiveTab("gantt")} />
