@@ -16,6 +16,7 @@ interface LlmState {
   setCheckingConnection: (checking: boolean) => void;
   setLastError: (error: string | null) => void;
   resetConfig: () => void;
+  autoDetectProvider: (baseUrl: string, apiKey?: string) => Promise<{ provider: import("../types/llm").LlmProvider | null; models: string[] }>;
 }
 
 const defaultConfig: LlmConfig = {
@@ -52,6 +53,25 @@ export const useLlmStore = create<LlmState>()(
       setLastError: (error) => set({ lastError: error }),
 
       resetConfig: () => set({ config: { ...defaultConfig } }),
+
+      autoDetectProvider: async (baseUrl: string, apiKey?: string) => {
+        const { detectLlmProvider } = await import("@/lib/llm");
+        const result = await detectLlmProvider(baseUrl, apiKey);
+        const detectedProvider = result.provider;
+        if (detectedProvider) {
+          set((state) => ({
+            config: {
+              ...state.config,
+              provider: detectedProvider,
+              baseUrl,
+              ...(apiKey ? { apiKey } : {}),
+              ...(result.models.length > 0 ? { model: result.models[0] } : {}),
+            },
+            availableModels: result.models,
+          }));
+        }
+        return result;
+      },
     }),
     {
       name: "mybp-llm-config",

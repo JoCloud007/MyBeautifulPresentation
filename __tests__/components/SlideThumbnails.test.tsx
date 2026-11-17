@@ -50,9 +50,7 @@ describe("SlideThumbnails — Docker Compose & UI Polish", () => {
 
   it("changes current slide when clicking a thumbnail", () => {
     render(<SlideThumbnails />);
-    const buttons = screen.getAllByRole("button");
-    // Click the second thumbnail button (first is usually the slide preview)
-    const thumbButtons = buttons.filter((b) => b.className.includes("aspect-video"));
+    const thumbButtons = screen.getAllByTestId(/^slide-thumb-/);
     fireEvent.click(thumbButtons[1]);
     expect(usePresentationStore.getState().currentSlideIndex).toBe(1);
   });

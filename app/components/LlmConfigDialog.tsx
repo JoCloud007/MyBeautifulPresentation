@@ -60,8 +60,15 @@ export function LlmConfigDialog() {
 
   return (
     <>
-      <Button variant="ghost" size="icon" className="h-8 w-8" title="Configuration LLM" onClick={() => setOpen(true)}>
-        <Settings className="h-4 w-4" />
+      <Button
+        variant="outline"
+        size="sm"
+        title="Configuration LLM"
+        className="gap-1.5 text-xs rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-[#e2e8f0]"
+        onClick={() => setOpen(true)}
+      >
+        <Settings className="h-3.5 w-3.5" />
+        Config LLM
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -76,7 +83,7 @@ export function LlmConfigDialog() {
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label>Provider</Label>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="radio"
@@ -97,7 +104,29 @@ export function LlmConfigDialog() {
                   onChange={() => setConfig({ provider: "openai", baseUrl: "https://api.openai.com/v1" })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm">OpenAI / Compatible</span>
+                <span className="text-sm">OpenAI</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="provider"
+                  value="vllm"
+                  checked={config.provider === "vllm"}
+                  onChange={() => setConfig({ provider: "vllm", baseUrl: "http://localhost:8000" })}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm">vLLM</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="provider"
+                  value="generic-openai"
+                  checked={config.provider === "generic-openai"}
+                  onChange={() => setConfig({ provider: "generic-openai", baseUrl: "http://localhost:8000/v1" })}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm">OpenAI-compatible</span>
               </label>
             </div>
           </div>
@@ -112,9 +141,9 @@ export function LlmConfigDialog() {
             />
           </div>
 
-          {config.provider === "openai" && (
+          {(config.provider === "openai" || config.provider === "vllm" || config.provider === "generic-openai") && (
             <div className="grid gap-2">
-              <Label htmlFor="apiKey">Clé API</Label>
+              <Label htmlFor="apiKey">Clé API (optionnel)</Label>
               <Input
                 id="apiKey"
                 type="password"
@@ -137,7 +166,7 @@ export function LlmConfigDialog() {
               Ignorer la vérification SSL
             </Label>
           </div>
-          <p className="text-[11px] text-muted-foreground -mt-2">
+          <p className="text-[11px] text-white/40 -mt-2">
             Utile derrière un proxy d'entreprise avec inspection SSL.
           </p>
 
@@ -160,7 +189,7 @@ export function LlmConfigDialog() {
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="temperature">Température</Label>
-              <span className="text-xs text-muted-foreground">{config.temperature}</span>
+              <span className="text-xs text-white/40">{config.temperature}</span>
             </div>
             <Slider
               id="temperature"
@@ -178,7 +207,7 @@ export function LlmConfigDialog() {
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="maxTokens">Max Tokens</Label>
-              <span className="text-xs text-muted-foreground">{config.maxTokens}</span>
+              <span className="text-xs text-white/40">{config.maxTokens}</span>
             </div>
             <Slider
               id="maxTokens"
@@ -200,13 +229,13 @@ export function LlmConfigDialog() {
               value={config.systemPrompt}
               onChange={(e) => setConfig({ systemPrompt: e.target.value })}
               rows={3}
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex min-h-[80px] w-full rounded-md border border-white/10 bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
 
-          <div className="flex items-center gap-2 p-2 rounded-md bg-muted">
+          <div className="flex items-center gap-2 p-2 rounded-md bg-white/10">
             {testing ? (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <Loader2 className="h-4 w-4 animate-spin text-white/40" />
             ) : testResult === true ? (
               <Check className="h-4 w-4 text-green-500" />
             ) : testResult === false ? (

@@ -148,7 +148,7 @@ export function PptxImportDialog({ open, onOpenChange }: PptxImportDialogProps) 
             </div>
             <div className="text-center">
               <p className="font-medium text-sm">Import réussi !</p>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-white/40 mt-1">
                 <span className="font-medium">{success.fileName}</span> —{" "}
                 {success.slideCount} slide{success.slideCount > 1 ? "s" : ""}{" "}
                 importée{success.slideCount > 1 ? "s" : ""}
@@ -171,7 +171,7 @@ export function PptxImportDialog({ open, onOpenChange }: PptxImportDialogProps) 
                 "relative flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed p-8 transition-colors cursor-pointer",
                 isDragging
                   ? "border-primary bg-primary/5"
-                  : "border-border bg-muted/30 hover:bg-muted/50"
+                  : "border-white/10 bg-white/5 hover:bg-white/10/50"
               )}
             >
               <input
@@ -188,7 +188,7 @@ export function PptxImportDialog({ open, onOpenChange }: PptxImportDialogProps) 
                 <Upload
                   className={cn(
                     "h-10 w-10 transition-colors",
-                    isDragging ? "text-primary" : "text-muted-foreground"
+                    isDragging ? "text-primary" : "text-white/40"
                   )}
                 />
               )}
@@ -201,9 +201,9 @@ export function PptxImportDialog({ open, onOpenChange }: PptxImportDialogProps) 
                     <p className="text-sm font-medium">
                       Glissez-déposez un fichier ici
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-white/40 mt-1">
                       ou cliquez pour parcourir — format{" "}
-                      <span className="font-mono text-[10px] bg-muted px-1 py-0.5 rounded">
+                      <span className="font-mono text-[10px] bg-white/10 px-1 py-0.5 rounded">
                         .pptx
                       </span>
                     </p>
@@ -230,12 +230,12 @@ export function PptxImportDialog({ open, onOpenChange }: PptxImportDialogProps) 
             )}
 
             {/* Info */}
-            <div className="flex items-start gap-2 rounded-lg border bg-muted/30 px-3 py-2.5 text-[11px] text-muted-foreground">
+            <div className="flex items-start gap-2 rounded-lg border bg-white/5 px-3 py-2.5 text-[11px] text-white/40">
               <FileType className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
               <p>
-                Les formes complexes, images et animations ne sont pas
-                importées. Seuls le texte, la structure des slides et les notes
-                sont extraits.
+                Les formes complexes et animations ne sont pas importées.
+                Le texte, la structure des slides, les notes et les images
+                sont extraits et préservés.
               </p>
             </div>
           </div>

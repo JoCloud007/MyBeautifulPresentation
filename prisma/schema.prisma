@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Presentation {
+  id        String   @id @default(uuid())
+  name      String
+  slides    Slide[]
+  template  Template? @relation(fields: [templateId], references: [id])
+  templateId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Slide {
+  id             String       @id @default(uuid())
+  presentationId String
+  presentation   Presentation @relation(fields: [presentationId], references: [id], onDelete: Cascade)
+  type           String       // title, content, two-column, timeline, gantt, roadmap, mermaid, excalidraw
+  title          String?
+  content        String?
+  data           Json?        // GANTT tasks, timeline events, mermaid code, excalidraw scene, etc.
+  order          Int
+  notes          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Template {
+  id          String         @id @default(uuid())
+  name        String
+  description String?
+  source      String         // 'ai', 'pptx', 'pdf', 'css', 'json', 'builtin', 'brand'
+  colors      Json           // { background, foreground, accent, secondary, muted, border }
+  fonts       Json           // { heading, body }
+  layouts     Json           // default slide layouts
+  isBuiltIn   Boolean        @default(false)
+  /// Template v2 complet sérialisé, source de vérité pour le rendu.
+  /// Les colonnes colors/fonts/layouts restent la projection lisible en SQL.
+  payload     Json?
+  /// Provenance de la charte client : { source, sourceName, importedAt, confidence, warnings }
+  brand       Json?
+  /// Logo de la charte : { url, alt, placement, maxHeight, opacity }
+  logo        Json?
+  presentations Presentation[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model StorySession {
+  id           String   @id @default(uuid())
+  mode         String   // 'interview', 'brainstorm', 'direct'
+  agentProfile String   // 'consultant', 'creative', 'technical', 'storyteller'
+  messages     Json     // [{ role, content, timestamp }]
+  result       Json?    // Generated slides/presentation
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

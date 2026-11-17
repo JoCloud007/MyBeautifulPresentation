@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Loader2, MessageCircle, Wand2, RotateCcw, CheckCircle2, ArrowRight } from "lucide-react";
-import { usePresentationStore } from "../stores/presentationStore";
+import { usePresentationStore, DEFAULT_INTERVIEW_PERSONAS } from "../stores/presentationStore";
 import { useLlmStore } from "../stores/llmStore";
 import {
   callLlmChat,
@@ -19,10 +19,18 @@ import {
 import { useTemplateStore, getActiveTemplate } from "../stores/templateStore";
 import { SlideLayout } from "../types/presentation";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function StoryInterview() {
   const {
     interview,
+    setInterviewPersona,
     setInterviewSubject,
     setInterviewQuestions,
     setInterviewAnswer,
@@ -33,6 +41,10 @@ export function StoryInterview() {
     setGenerating,
     createFromStory,
   } = usePresentationStore();
+
+  const interviewPersonas = usePresentationStore((s) => s.interviewPersonas);
+  const allPersonas = [...DEFAULT_INTERVIEW_PERSONAS, ...interviewPersonas];
+  const persona = allPersonas.find((p) => p.id === interview.persona) || allPersonas[0];
 
   const { config, isAvailable } = useLlmStore();
   const templateState = useTemplateStore();
@@ -54,7 +66,7 @@ export function StoryInterview() {
     abortRef.current = new AbortController();
 
     try {
-      const messages = buildInterviewQuestionsPrompt(interview.subject, config, template);
+      const messages = buildInterviewQuestionsPrompt(interview.subject, persona, config, template);
       const raw = await callLlmChat(config, messages, abortRef.current.signal);
 
       // Parse questions from response
@@ -108,6 +120,7 @@ export function StoryInterview() {
         interview.subject,
         interview.questions,
         interview.answers,
+        persona,
         config,
         template
       );
@@ -182,7 +195,7 @@ export function StoryInterview() {
   const allAnswered = interview.answers.every((a) => a.trim().length > 0);
 
   return (
-    <div className="flex flex-col h-full bg-background text-foreground overflow-hidden">
+    <div className="flex flex-col h-full bg-transparent text-[#e2e8f0] overflow-hidden">
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {/* Header */}
         <div className="space-y-1">
@@ -190,7 +203,7 @@ export function StoryInterview() {
             <MessageCircle className="h-4 w-4" />
             Mode Interview
           </h3>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-white/40">
             Décrivez votre sujet, répondez aux questions, et laissez l'IA construire votre storytelling.
           </p>
         </div>
@@ -208,6 +221,31 @@ export function StoryInterview() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Persona selector */}
+        <div className="space-y-1.5">
+          <Label className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
+            Persona de l'interview
+          </Label>
+          <Select
+            value={interview.persona}
+            onValueChange={(v) => v && setInterviewPersona(v)}
+          >
+            <SelectTrigger size="sm" className="w-full text-xs">
+              <SelectValue placeholder="Choisir un persona" />
+            </SelectTrigger>
+            <SelectContent>
+              {allPersonas.map((p) => (
+                <SelectItem key={p.id} value={p.id} className="text-xs">
+                  <div className="flex flex-col">
+                    <span>{p.name}</span>
+                    <span className="text-[10px] text-white/40">{p.description}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Step 1: Subject */}
         <div className="space-y-2">
@@ -245,7 +283,7 @@ export function StoryInterview() {
             >
               <div className="space-y-1">
                 <Label className="text-xs font-medium">2. Répondez aux questions</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-white/40">
                   Plus vos réponses sont détaillées, meilleur sera le storytelling.
                 </p>
               </div>
@@ -257,7 +295,7 @@ export function StoryInterview() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="rounded-lg border p-3 space-y-2"
+                    className="rounded-lg border border-white/10 p-3 space-y-2 bg-[#16162a]"
                   >
                     <div className="flex items-start gap-2">
                       <span className="flex-shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center mt-0.5">
@@ -269,7 +307,7 @@ export function StoryInterview() {
                       value={interview.answers[index] || ""}
                       onChange={(e) => setInterviewAnswer(index, e.target.value)}
                       placeholder="Votre réponse..."
-                      className="text-xs min-h-[50px] resize-none"
+                      className="text-xs min-h-[50px] resize-none bg-[#0f0f1a] border-white/10 text-[#e2e8f0] placeholder:text-white/30"
                       disabled={interview.step === "generating"}
                     />
                   </motion.div>
@@ -306,7 +344,7 @@ export function StoryInterview() {
                 <Label className="text-xs font-medium">3. Storytelling généré</Label>
               </div>
 
-              <div className="rounded-lg border p-3 bg-muted/30">
+              <div className="rounded-lg border border-white/10 p-3 bg-[#16162a]">
                 <pre className="text-xs whitespace-pre-wrap font-sans leading-relaxed">
                   {interview.storytelling}
                 </pre>

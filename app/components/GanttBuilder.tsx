@@ -309,7 +309,7 @@ export function GanttBuilder() {
     mode === "gantt" ? tasks.length > 0 : events.length > 0;
 
   return (
-    <div className="flex flex-col h-full bg-background text-foreground">
+    <div className="flex flex-col h-full bg-transparent text-foreground">
       {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Editor sidebar */}
@@ -380,7 +380,7 @@ export function GanttBuilder() {
             <div className="p-3 space-y-3">
               {mode === "gantt" ? (
                 tasks.length === 0 ? (
-                  <div className="text-sm text-muted-foreground text-center py-8">
+                  <div className="text-sm text-white/40 text-center py-8">
                     Aucune tâche. Cliquez sur "Ajouter" pour commencer.
                   </div>
                 ) : (
@@ -473,7 +473,7 @@ export function GanttBuilder() {
                   ))
                 )
               ) : events.length === 0 ? (
-                <div className="text-sm text-muted-foreground text-center py-8">
+                <div className="text-sm text-white/40 text-center py-8">
                   Aucun événement. Cliquez sur "Ajouter" pour commencer.
                 </div>
               ) : (

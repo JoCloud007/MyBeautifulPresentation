@@ -426,3 +426,120 @@ export function getTimelineDateRange(events: TimelineEvent[]): { min: Date; max:
     max: new Date(max.getTime() + padding),
   };
 }
+
+// ─── Roadmap Types ───────────────────────────────────────────────────────────
+
+export type Phase = "Q1" | "Q2" | "Q3" | "Q4";
+
+export interface RoadmapItem {
+  id: string;
+  name: string;
+  startDate: string; // ISO 8601 YYYY-MM-DD
+  endDate: string;   // ISO 8601 YYYY-MM-DD
+  laneId: string;
+  phase: Phase;
+  color?: string;
+  progress?: number; // 0-100
+  status?: "planned" | "in-progress" | "completed" | "delayed";
+}
+
+export interface RoadmapLane {
+  id: string;
+  name: string;
+  color?: string;
+}
+
+// ─── Roadmap Parsing ─────────────────────────────────────────────────────────
+
+export function parseRoadmapContent(content: string): { items: RoadmapItem[]; lanes: RoadmapLane[] } {
+  const lines = content.split("\n").map((l) => l.trim()).filter(Boolean);
+  const items: RoadmapItem[] = [];
+  const laneMap = new Map<string, RoadmapLane>();
+
+  for (const line of lines) {
+    const parts = line.split("|").map((p) => p.trim());
+    if (parts.length < 4) continue;
+
+    const name = parts[0];
+    const startRaw = parts[1];
+    const endRaw = parts[2];
+    const laneName = parts[3] || "Default";
+    const phaseRaw = (parts[4] || "Q1").toUpperCase() as Phase;
+    const color = parts[5] || undefined;
+    const status = (parts[6] as RoadmapItem["status"]) || "planned";
+    const progress = Number.isNaN(parseFloat(parts[7])) ? undefined : parseFloat(parts[7]);
+
+    const startDate = parseDate(startRaw);
+    const endDate = parseDate(endRaw);
+
+    if (!laneMap.has(laneName)) {
+      laneMap.set(laneName, {
+        id: generateUUID(),
+        name: laneName,
+      });
+    }
+    const lane = laneMap.get(laneName)!;
+
+    items.push({
+      id: generateUUID(),
+      name,
+      startDate: startDate ? formatDateISO(startDate) : formatDateISO(new Date()),
+      endDate: endDate ? formatDateISO(endDate) : formatDateISO(addDays(new Date(), 30)),
+      laneId: lane.id,
+      phase: ["Q1", "Q2", "Q3", "Q4"].includes(phaseRaw) ? phaseRaw : "Q1",
+      color,
+      progress,
+      status,
+    });
+  }
+
+  return { items, lanes: Array.from(laneMap.values()) };
+}
+
+export function formatRoadmapItems(items: RoadmapItem[], lanes: RoadmapLane[]): string {
+  const laneMap = new Map(lanes.map((l) => [l.id, l]));
+  return items
+    .map((item) => {
+      const laneName = laneMap.get(item.laneId)?.name || "Default";
+      const parts = [
+        item.name,
+        item.startDate,
+        item.endDate,
+        laneName,
+        item.phase,
+        item.color || "",
+        item.status || "",
+        item.progress !== undefined ? String(item.progress) : "",
+      ];
+      return parts.join(" | ");
+    })
+    .join("\n");
+}
+
+export function getRoadmapDateRange(items: RoadmapItem[]): { min: Date; max: Date } {
+  if (items.length === 0) {
+    const now = new Date();
+    return { min: now, max: addDays(now, 90) };
+  }
+  const dates = items.flatMap((i) => [new Date(i.startDate), new Date(i.endDate)]);
+  const min = new Date(Math.min(...dates.map((d) => d.getTime())));
+  const max = new Date(Math.max(...dates.map((d) => d.getTime())));
+  const padding = (max.getTime() - min.getTime()) * 0.05;
+  return {
+    min: new Date(min.getTime() - padding),
+    max: new Date(max.getTime() + padding),
+  };
+}
+
+export function getRoadmapItemPosition(
+  item: RoadmapItem,
+  minDate: Date,
+  maxDate: Date
+): { left: number; width: number } {
+  const totalMs = maxDate.getTime() - minDate.getTime();
+  const start = new Date(item.startDate).getTime();
+  const end = new Date(item.endDate).getTime();
+  const left = ((start - minDate.getTime()) / totalMs) * 100;
+  const width = ((end - start) / totalMs) * 100;
+  return { left: Math.max(0, left), width: Math.max(0.5, width) };
+}

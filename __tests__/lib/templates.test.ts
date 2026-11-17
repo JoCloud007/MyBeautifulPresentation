@@ -42,9 +42,9 @@ describe("Template Library Functions", () => {
   });
 
   describe("getAllTemplates", () => {
-    it("should return all 3 templates", () => {
+    it("should return all built-in templates", () => {
       const templates = getAllTemplates();
-      expect(templates).toHaveLength(3);
+      expect(templates.length).toBeGreaterThanOrEqual(3);
     });
 
     it("should include all template ids", () => {
@@ -105,9 +105,9 @@ describe("Template Library Functions", () => {
       expect(colors).toEqual({});
     });
 
-    it("should return 8 CSS variables for valid template", () => {
+    it("should return at least 8 CSS variables for valid template", () => {
       const colors = applyTemplateColors("corporate");
-      expect(Object.keys(colors)).toHaveLength(8);
+      expect(Object.keys(colors).length).toBeGreaterThanOrEqual(8);
     });
   });
 });

@@ -17,7 +17,7 @@ export function TemplateSelector() {
 
   return (
     <div className="flex flex-col gap-2 p-3">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40">
         Templates
       </h3>
       <div className="grid grid-cols-1 gap-2">
@@ -29,7 +29,7 @@ export function TemplateSelector() {
               "flex items-center gap-3 p-2.5 rounded-lg border text-left transition-all hover:shadow-sm",
               active.id === template.id
                 ? "border-primary bg-primary/5 ring-1 ring-primary"
-                : "border-border bg-card hover:bg-accent"
+                : "border-white/10 bg-[#16162a] hover:bg-accent"
             )}
           >
             {/* Color preview */}
@@ -47,7 +47,7 @@ export function TemplateSelector() {
             </div>
             <div className="min-w-0">
               <div className="text-sm font-medium truncate">{template.name}</div>
-              <div className="text-xs text-muted-foreground truncate">
+              <div className="text-xs text-white/40 truncate">
                 {template.description}
               </div>
             </div>

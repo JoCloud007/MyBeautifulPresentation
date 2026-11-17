@@ -1,0 +1,45 @@
+/* Charte de test — Acme Industries
+   Fichier volontairement réaliste : variables, @font-face, hiérarchie nommée. */
+
+:root {
+  --acme-primary: #0b3d91;
+  --acme-primary-dark: #082a66;
+  --acme-secondary: #4a5568;
+  --acme-accent: #e85d04;
+  --acme-background: #ffffff;
+  --acme-surface: #f7f7f9;
+  --acme-text: #1a202c;
+  --acme-muted: #edf2f7;
+  --acme-border: #e2e8f0;
+
+  --acme-radius-sm: 2px;
+  --acme-radius-md: 6px;
+  --acme-font-heading: "Acme Grotesk";
+  --acme-font-body: "Acme Text";
+  --acme-spacing-md: 16px;
+}
+
+@font-face {
+  font-family: "Acme Grotesk";
+  src: url("/fonts/acme-grotesk-semibold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Acme Text";
+  src: url("/fonts/acme-text-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+}
+
+body {
+  font-family: "Acme Text", Georgia, serif;
+  color: var(--acme-text);
+  background-color: var(--acme-background);
+}
+
+h1, h2, h3 {
+  font-family: "Acme Grotesk", Helvetica, sans-serif;
+  color: var(--acme-primary);
+}

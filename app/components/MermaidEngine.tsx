@@ -16,8 +16,17 @@ export function MermaidEngine({ code, className = "" }: MermaidEngineProps) {
   useEffect(() => {
     mermaid.initialize({
       startOnLoad: false,
-      theme: "default",
+      theme: "base",
       securityLevel: "strict",
+      themeVariables: {
+        background: "transparent",
+        primaryColor: "#e1f5fe",
+        primaryTextColor: "#01579b",
+        primaryBorderColor: "#0288d1",
+        lineColor: "#0288d1",
+        secondaryColor: "#b3e5fc",
+        tertiaryColor: "#81d4fa",
+      },
     });
   }, []);
 
@@ -57,7 +66,7 @@ export function MermaidEngine({ code, className = "" }: MermaidEngineProps) {
     return (
       <div className={`flex flex-col items-center justify-center p-6 ${className}`}>
         <div className="text-sm text-destructive font-medium mb-2">Erreur de rendu du diagramme</div>
-        <pre className="text-xs text-muted-foreground bg-muted p-3 rounded-lg overflow-auto max-w-full">
+        <pre className="text-xs text-white/40 bg-white/10 p-3 rounded-lg overflow-auto max-w-full">
           {error}
         </pre>
       </div>
@@ -67,7 +76,7 @@ export function MermaidEngine({ code, className = "" }: MermaidEngineProps) {
   if (!svg) {
     return (
       <div className={`flex items-center justify-center p-6 ${className}`}>
-        <div className="text-sm text-muted-foreground">Aucun diagramme à afficher</div>
+        <div className="text-sm text-white/40">Aucun diagramme à afficher</div>
       </div>
     );
   }

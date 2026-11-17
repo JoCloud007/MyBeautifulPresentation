@@ -16,11 +16,7 @@ ENV HTTPS_PROXY=${HTTPS_PROXY}
 ENV NO_PROXY=${NO_PROXY}
 ENV NODE_TLS_REJECT_UNAUTHORIZED=${NODE_TLS_REJECT_UNAUTHORIZED}
 
-RUN if [ -n "$APK_NO_CHECK_CERTIFICATE" ]; then \
-      apk add --no-check-certificate --no-cache libc6-compat; \
-    else \
-      apk add --no-cache libc6-compat; \
-    fi
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
@@ -30,15 +26,25 @@ RUN if [ -n "$HTTP_PROXY" ]; then npm config set proxy "$HTTP_PROXY"; fi
 RUN if [ -n "$HTTPS_PROXY" ]; then npm config set https-proxy "$HTTPS_PROXY"; fi
 RUN if [ "$NODE_TLS_REJECT_UNAUTHORIZED" = "0" ]; then npm config set strict-ssl false; fi
 
-RUN npm ci
+RUN npm install
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+ARG CACHE_BUST=1
+ARG NEXT_PUBLIC_MCP_PPTX_URL=""
+ARG NEXT_PUBLIC_MCP_MERMAID_URL=""
+ARG NEXT_PUBLIC_MCP_EXCALIDRAW_URL=""
+ARG NEXT_PUBLIC_MCP_WEB_URL=""
+ENV NEXT_PUBLIC_MCP_PPTX_URL=${NEXT_PUBLIC_MCP_PPTX_URL}
+ENV NEXT_PUBLIC_MCP_MERMAID_URL=${NEXT_PUBLIC_MCP_MERMAID_URL}
+ENV NEXT_PUBLIC_MCP_EXCALIDRAW_URL=${NEXT_PUBLIC_MCP_EXCALIDRAW_URL}
+ENV NEXT_PUBLIC_MCP_WEB_URL=${NEXT_PUBLIC_MCP_WEB_URL}
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
+RUN npx prisma generate
 RUN npm run build
 
 # Production image, copy all the files and run next

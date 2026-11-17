@@ -15,6 +15,7 @@ export interface GanttEngineProps {
   fonts: TemplateFont;
   scale: number;
   viewMode?: TimeScale | "auto";
+  noTruncate?: boolean;
 }
 
 export function GanttEngine({
@@ -23,6 +24,7 @@ export function GanttEngine({
   fonts,
   scale,
   viewMode = "auto",
+  noTruncate = false,
 }: GanttEngineProps) {
   const { min, max } = getDateRange(tasks);
   const effectiveScale: TimeScale = resolveTimeScale(min, max, viewMode);
@@ -36,7 +38,6 @@ export function GanttEngine({
       style={{
         fontFamily: fonts.body,
         color: colors.foreground,
-        backgroundColor: colors.background,
       }}
     >
       {/* Scale header */}
@@ -100,7 +101,7 @@ export function GanttEngine({
                 >
                   {/* Task name */}
                   <div
-                    className="flex-shrink-0 px-2 truncate"
+                    className={`flex-shrink-0 px-2 ${noTruncate ? "" : "truncate"}`}
                     style={{
                       width: isMini ? "30%" : "25%",
                       fontSize: isMini ? 8 : 12,

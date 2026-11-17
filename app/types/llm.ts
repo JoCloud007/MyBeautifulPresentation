@@ -1,4 +1,4 @@
-export type LlmProvider = "ollama" | "openai";
+export type LlmProvider = "ollama" | "openai" | "vllm" | "generic-openai";
 
 export interface LlmConfig {
   provider: LlmProvider;
@@ -88,4 +88,10 @@ export interface OpenAIModel {
   object: string;
   created: number;
   owned_by: string;
+}
+
+export interface LlmDetectResponse {
+  provider: LlmProvider | null;
+  models: string[];
+  error?: string;
 }

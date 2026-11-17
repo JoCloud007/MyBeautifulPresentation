@@ -3,8 +3,10 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { Toolbar } from "@/app/components/Toolbar";
 import { usePresentationStore } from "@/app/stores/presentationStore";
 
-vi.mock("@/lib/pptxExport", () => ({
-  exportToPPTX: vi.fn(),
+// The export engine is exercised in __tests__/lib/htmlExport.test.ts (plan step 5);
+// here we only check the export menu wiring, so the engine is mocked.
+vi.mock("@/lib/htmlExport/exportHtmlPptx", () => ({
+  exportHtmlPptx: vi.fn(),
 }));
 
 describe("Toolbar — Docker Compose & UI Polish", () => {

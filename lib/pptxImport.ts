@@ -1,12 +1,18 @@
 import JSZip from "jszip";
 import { XMLParser } from "fast-xml-parser";
 import { Presentation, Slide, SlideLayout } from "@/app/types/presentation";
+import { Template } from "@/app/types/template";
 
 interface ParsedSlide {
   title: string;
   content: string;
   layout: SlideLayout;
   notes: string;
+  images: string[];
+}
+
+export interface ImportedPresentation extends Presentation {
+  template?: Template;
 }
 
 // ZIP bomb protection limits
@@ -71,7 +77,9 @@ function extractTextFromNode(node: unknown): string {
  * Extract paragraphs from a text body, preserving structure.
  * Returns array of { text, level } for bullet support.
  */
-function extractParagraphs(node: unknown): Array<{ text: string; level: number }> {
+function extractParagraphs(
+  node: unknown
+): Array<{ text: string; level: number }> {
   if (typeof node !== "object" || node === null) {
     return [];
   }
@@ -101,9 +109,11 @@ function extractParagraphs(node: unknown): Array<{ text: string; level: number }
 }
 
 /**
- * Parse a single slide XML into title, content, layout.
+ * Parse a single slide XML into title, content, layout, and images.
  */
-function parseSlideXml(xmlContent: string): Omit<ParsedSlide, "notes"> {
+function parseSlideXml(
+  xmlContent: string
+): Omit<ParsedSlide, "notes" | "images"> {
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "@_",
@@ -144,11 +154,13 @@ function parseSlideXml(xmlContent: string): Omit<ParsedSlide, "notes"> {
     if (!textBody) continue;
 
     const paragraphs = extractParagraphs(textBody);
-    const bulletText = paragraphs.map((p) => {
-      const indent = "  ".repeat(p.level);
-      const bullet = p.level > 0 ? "- " : "• ";
-      return indent + bullet + p.text;
-    }).join("\n");
+    const bulletText = paragraphs
+      .map((p) => {
+        const indent = "  ".repeat(p.level);
+        const bullet = p.level > 0 ? "- " : "• ";
+        return indent + bullet + p.text;
+      })
+      .join("\n");
 
     if (!bulletText.trim()) continue;
 
@@ -237,7 +249,7 @@ async function extractSlideNotes(
   zip: JSZip,
   slideFile: string
 ): Promise<string> {
-  const slideName = slideFile.split('/').pop() ?? '';
+  const slideName = slideFile.split("/").pop() ?? "";
   const slideRelsPath = `ppt/slides/_rels/${slideName}.rels`;
 
   const slideRelsXml = await zip.file(slideRelsPath)?.async("text");
@@ -257,8 +269,8 @@ async function extractSlideNotes(
     ? [relationships]
     : [];
 
-  const notesRel = relArray.find(
-    (r: Record<string, string>) => r["@_Type"]?.includes("/notesSlide")
+  const notesRel = relArray.find((r: Record<string, string>) =>
+    r["@_Type"]?.includes("/notesSlide")
   );
   if (!notesRel) return "";
 
@@ -298,6 +310,158 @@ async function extractSlideNotes(
   return "";
 }
 
+/**
+ * Extract images embedded in a slide by resolving relationships.
+ */
+async function extractSlideImages(
+  zip: JSZip,
+  slideFile: string
+): Promise<string[]> {
+  const slideName = slideFile.split("/").pop() ?? "";
+  const slideRelsPath = `ppt/slides/_rels/${slideName}.rels`;
+
+  const slideRelsXml = await zip.file(slideRelsPath)?.async("text");
+  if (!slideRelsXml) return [];
+
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "@_",
+    processEntities: false,
+  });
+
+  const slideRels = parser.parse(slideRelsXml);
+  const relationships = slideRels?.["Relationships"]?.["Relationship"];
+  const relArray = Array.isArray(relationships)
+    ? relationships
+    : relationships
+    ? [relationships]
+    : [];
+
+  const imageRels = relArray.filter((r: Record<string, string>) =>
+    r["@_Type"]?.includes("/image")
+  );
+
+  const images: string[] = [];
+  for (const rel of imageRels) {
+    const target = rel["@_Target"];
+    const imagePath = `ppt/${target.replace(/^\.\.\//, "")}`;
+    const imageBuffer = await zip.file(imagePath)?.async("base64");
+    if (!imageBuffer) continue;
+
+    const ext = imagePath.split(".").pop()?.toLowerCase() || "png";
+    const mimeType =
+      ext === "jpg" || ext === "jpeg"
+        ? "image/jpeg"
+        : ext === "gif"
+        ? "image/gif"
+        : ext === "svg"
+        ? "image/svg+xml"
+        : "image/png";
+
+    images.push(`data:${mimeType};base64,${imageBuffer}`);
+  }
+
+  return images;
+}
+
+/**
+ * Extract master slide properties and map them to an app Template.
+ */
+async function extractMasterTemplate(zip: JSZip): Promise<Template | undefined> {
+  const masterXml = await zip
+    .file("ppt/slideMasters/slideMaster1.xml")
+    ?.async("text");
+  if (!masterXml) return undefined;
+
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "@_",
+    processEntities: false,
+  });
+
+  const parsed = parser.parse(masterXml);
+  const cSld = parsed?.["p:sldMaster"]?.["p:cSld"];
+
+  // Extract background color
+  let background = "FFFFFF";
+  const bgPr = cSld?.["p:bg"]?.["p:bgPr"];
+  const bgSrgb = bgPr?.["a:solidFill"]?.["a:srgbClr"]?.["@_val"];
+  const bgScheme = bgPr?.["a:solidFill"]?.["a:schemeClr"]?.["@_val"];
+  if (bgSrgb) {
+    background = bgSrgb;
+  } else if (bgScheme) {
+    // Map common scheme colors to reasonable defaults
+    background = bgScheme === "bg1" ? "FFFFFF" : "F8FAFC";
+  }
+
+  // Extract fonts from txStyles
+  let headingFont = "Arial";
+  let bodyFont = "Arial";
+  const txStyles = parsed?.["p:sldMaster"]?.["p:txStyles"];
+  const titleStyle = txStyles?.["p:titleStyle"]?.["a:lvl1pPr"]?.["a:defRPr"];
+  const otherStyle = txStyles?.["p:otherStyle"]?.["a:defRPr"];
+  if (titleStyle?.["a:latin"]?.["@_typeface"]) {
+    headingFont = titleStyle["a:latin"]["@_typeface"];
+  }
+  if (otherStyle?.["a:latin"]?.["@_typeface"]) {
+    bodyFont = otherStyle["a:latin"]["@_typeface"];
+  }
+
+  // Extract colors from shapes in master (best-effort)
+  let foreground = "000000";
+  let accent = "1e40af";
+  const spTree = cSld?.["p:spTree"];
+  const shapes = spTree?.["p:sp"];
+  const shapeArray = shapes
+    ? Array.isArray(shapes)
+      ? shapes
+      : [shapes]
+    : [];
+
+  for (const shape of shapeArray) {
+    const textBody = shape["p:txBody"];
+    if (!textBody) continue;
+    const paragraphs = extractParagraphs(textBody);
+    if (paragraphs.length > 0) {
+      const pPr = (textBody as Record<string, unknown>)["a:p"] as
+        | Record<string, unknown>
+        | Record<string, unknown>[]
+        | undefined;
+      const firstP = Array.isArray(pPr) ? pPr[0] : pPr;
+      const defRPr = firstP?.["a:defRPr"] as Record<string, unknown> | undefined;
+      const solidFill = defRPr?.["a:solidFill"] as
+        | Record<string, unknown>
+        | undefined;
+      const srgbClr = (solidFill?.["a:srgbClr"] as Record<string, string> | undefined)?.["@_val"];
+      if (srgbClr) {
+        foreground = srgbClr;
+        break;
+      }
+    }
+  }
+
+  return {
+    id: "imported-template",
+    name: "Imported Template",
+    description: "Template extrait du fichier PPTX importé",
+    category: "corporate",
+    colors: {
+      name: "Imported",
+      background,
+      foreground,
+      accent,
+      secondary: "64748B",
+      muted: "E2E8F0",
+      border: "CBD5E1",
+    },
+    fonts: {
+      heading: headingFont,
+      body: bodyFont,
+    },
+    defaultSlides: [],
+  };
+}
+
 function isValidPptxMimeType(file: File): boolean {
   // PPTX files are ZIP archives with specific MIME types
   const validTypes = [
@@ -307,14 +471,17 @@ function isValidPptxMimeType(file: File): boolean {
   return validTypes.includes(file.type);
 }
 
-export async function importPPTX(file: File): Promise<Presentation> {
+export async function importPPTX(file: File): Promise<ImportedPresentation> {
   // Basic MIME type validation (can be bypassed but provides first-line defense)
   if (!isValidPptxMimeType(file)) {
     // Also check magic number via array buffer
     const header = await file.slice(0, 4).arrayBuffer();
     const view = new Uint8Array(header);
     // ZIP magic number: PK\x03\x04 or PK\x05\x06 or PK\x07\x08
-    const isZip = view[0] === 0x50 && view[1] === 0x4B && (view[2] === 0x03 || view[2] === 0x05 || view[2] === 0x07);
+    const isZip =
+      view[0] === 0x50 &&
+      view[1] === 0x4b &&
+      (view[2] === 0x03 || view[2] === 0x05 || view[2] === 0x07);
     if (!isZip) {
       throw new Error("Le fichier n'est pas un fichier ZIP/PPTX valide");
     }
@@ -325,7 +492,9 @@ export async function importPPTX(file: File): Promise<Presentation> {
   // ZIP bomb protection: check entry count
   const entries = Object.keys(zip.files);
   if (entries.length > MAX_ENTRY_COUNT) {
-    throw new Error(`Fichier PPTX trop complexe : ${entries.length} entrées (maximum ${MAX_ENTRY_COUNT})`);
+    throw new Error(
+      `Fichier PPTX trop complexe : ${entries.length} entrées (maximum ${MAX_ENTRY_COUNT})`
+    );
   }
 
   // ZIP bomb protection: estimate uncompressed size using internal JSZip data
@@ -367,7 +536,9 @@ export async function importPPTX(file: File): Promise<Presentation> {
   }
 
   // Read presentation.xml to get slide order
-  const presentationXml = await zip.file("ppt/presentation.xml")?.async("text");
+  const presentationXml = await zip
+    .file("ppt/presentation.xml")
+    ?.async("text");
   if (!presentationXml) {
     throw new Error("Fichier PPTX invalide : presentation.xml introuvable");
   }
@@ -391,7 +562,9 @@ export async function importPPTX(file: File): Promise<Presentation> {
   }
 
   // Map rId to slide file
-  const relsXml = await zip.file("ppt/_rels/presentation.xml.rels")?.async("text");
+  const relsXml = await zip
+    .file("ppt/_rels/presentation.xml.rels")
+    ?.async("text");
   if (!relsXml) {
     throw new Error("Fichier PPTX invalide : relations introuvables");
   }
@@ -427,6 +600,7 @@ export async function importPPTX(file: File): Promise<Presentation> {
 
     const parsed = parseSlideXml(slideXml);
     const notes = await extractSlideNotes(zip, slideFile);
+    const images = await extractSlideImages(zip, slideFile);
 
     slides.push({
       id: generateUUID(),
@@ -434,18 +608,25 @@ export async function importPPTX(file: File): Promise<Presentation> {
       content: parsed.content || "",
       layout: parsed.layout,
       notes: notes || undefined,
+      data: images.length > 0 ? ({ images } as unknown as Record<string, unknown>) : undefined,
     });
   }
 
   if (missingSlides.length > 0) {
-    console.warn(`PPTX import: ${missingSlides.length} slide(s) manquante(s):`, missingSlides);
+    console.warn(
+      `PPTX import: ${missingSlides.length} slide(s) manquante(s):`,
+      missingSlides
+    );
   }
 
   if (slides.length === 0) {
     throw new Error("Impossible d'extraire les slides du fichier PPTX");
   }
 
-  return {
+  // Extract master slide template
+  const template = await extractMasterTemplate(zip);
+
+  const result: ImportedPresentation = {
     id: generateUUID(),
     title: file.name.replace(/\.pptx$/i, ""),
     subtitle: "",
@@ -453,5 +634,8 @@ export async function importPPTX(file: File): Promise<Presentation> {
     slides,
     createdAt: Date.now(),
     updatedAt: Date.now(),
+    ...(template ? { template } : {}),
   };
+
+  return result;
 }

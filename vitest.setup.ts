@@ -18,6 +18,19 @@ beforeEach(() => {
   uuidCounter = 0;
 });
 
+// Stub the dynamic `import("undici")` used by lib/ssrfGuard.ts for pinned
+// fetches: the real package resolves oddly inside jsdom/vitest, and the API
+// route tests mock global fetch anyway — the guard just needs the pinned
+// lookup to route through the same mocked fetch.
+vi.mock("undici", () => {
+  const makeAgent = () => ({ __undiciAgentStub: true });
+  return {
+    Agent: makeAgent,
+    ProxyAgent: makeAgent,
+    fetch: (url: unknown, init?: unknown) => global.fetch(url as never, init as never),
+  };
+});
+
 // Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};

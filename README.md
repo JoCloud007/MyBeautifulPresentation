@@ -7,6 +7,7 @@ Generate beautiful presentations from natural language storytelling, powered by 
 - **Storytelling to Slides** — Describe your presentation in plain text and let the AI generate structured slides
 - **Local LLM Integration** — Connect to your own Ollama instance (no cloud API keys required)
 - **Professional Templates** — Corporate, Tech, and Minimal themes with full color and font customization
+- **Client Brand Kits** — Import a client's charte (CSS, PPTX theme, PDF guidelines, logo/SVG icons) and get a ready-to-use template: 7 colour roles inferred with evidence, fonts loaded and embedded, logo placed on every slide, in both the PPTX and HTML exports
 - **Visual Layouts** — Title, content, two-column, image, **timeline**, and **GANTT** slide layouts
 - **PPTX Import & Export** — Seamlessly work with existing PowerPoint files
 - **Live Preview** — See your slides rendered in real-time as you edit

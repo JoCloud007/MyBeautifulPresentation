@@ -28,18 +28,25 @@ export const BRAINSTORM_PERSONAS = [
     prompt: "",
   },
   {
-    id: "expert",
-    name: "Expert technique",
-    description: "Approfondit les détails techniques et la rigueur",
+    id: "chief-of-staff",
+    name: "Chief of Staff",
+    description: "Vision stratégique, alignement exécutif, priorisation",
     prompt:
-      "Tu es un expert technique senior reconnu dans ton domaine. Tu poses des questions précises, exiges la clarté, identifies les incohérences, et pousses à la profondeur. Tu ne laisses jamais passer une affirmation non justifiée. Ton objectif : rendre le storytelling irréprochable sur le fond.",
+      "Tu es un Chief of Staff d'expérience. Tu penses en termes de stratégie d'entreprise, d'alignement des équipes, de priorisation des initiatives. Tu poses des questions qui aident à clarifier la vision, les objectifs mesurables, et la faisabilité opérationnelle. Tu veux un storytelling qui convaincra le comité de direction.",
   },
   {
-    id: "manager",
-    name: "Manager",
-    description: "Focus exécution, impact business et timeline",
+    id: "tech-lead",
+    name: "Tech Lead",
+    description: "Focus technique, architecture, faisabilité tech",
     prompt:
-      "Tu es un manager senior avec 15 ans d'expérience. Tu regardes tout sous l'angle de l'exécution : qui fait quoi, quand, avec quels moyens ? Tu challenges sur la faisabilité, le calendrier, les ressources nécessaires. Tu veux un storytelling qui convaincra les équipes et les décideurs.",
+      "Tu es un Tech Lead senior avec une vision produit. Tu poses des questions sur l'architecture, les choix technologiques, la scalabilité, la dette technique, et l'intégration avec les systèmes existants. Tu veux un storytelling qui rassure les équipes tech et démontre la solidité technique du sujet.",
+  },
+  {
+    id: "expert",
+    name: "Expert Domaine",
+    description: "Expertise sectorielle, tendances, benchmarks",
+    prompt:
+      "Tu es un expert reconnu dans le domaine du sujet. Tu poses des questions sur les tendances du marché, les benchmarks concurrentiels, les données chiffrées, et les meilleures pratiques. Tu veux un storytelling crédible, factuel, et qui démontre une expertise pointue.",
   },
   {
     id: "cfo",
@@ -267,7 +274,7 @@ export function StoryBrainstorming() {
   const hasStarted = brainstorm.messages.length > 0;
 
   return (
-    <div className="flex flex-col h-full bg-background text-foreground overflow-hidden">
+    <div className="flex flex-col h-full bg-transparent text-[#e2e8f0] overflow-hidden">
       {/* Header */}
       <div className="border-b px-4 py-3 space-y-3 shrink-0">
         <div className="space-y-1">
@@ -275,14 +282,14 @@ export function StoryBrainstorming() {
             <Lightbulb className="h-4 w-4" />
             Mode Brainstorming
           </h3>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-white/40">
             Discutez avec un expert pour affiner votre storytelling en temps réel.
           </p>
         </div>
 
         {/* Persona selector */}
         <div className="space-y-1.5">
-          <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+          <Label className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
             Persona
           </Label>
           <Select
@@ -297,7 +304,7 @@ export function StoryBrainstorming() {
                 <SelectItem key={p.id} value={p.id} className="text-xs">
                   <div className="flex flex-col">
                     <span>{p.name}</span>
-                    <span className="text-[10px] text-muted-foreground">{p.description}</span>
+                    <span className="text-[10px] text-white/40">{p.description}</span>
                   </div>
                 </SelectItem>
               ))}
@@ -308,14 +315,14 @@ export function StoryBrainstorming() {
         {/* Subject */}
         {!hasStarted && (
           <div className="space-y-1.5">
-            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+            <Label className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
               Sujet de la présentation
             </Label>
             <Textarea
               value={brainstorm.subject}
               onChange={(e) => setBrainstormSubject(e.target.value)}
               placeholder="Décrivez le sujet de votre présentation..."
-              className="text-xs min-h-[50px] resize-none"
+              className="text-xs min-h-[50px] resize-none bg-[#16162a] border-white/10 text-[#e2e8f0] placeholder:text-white/30"
             />
             <Button
               size="sm"
@@ -357,7 +364,7 @@ export function StoryBrainstorming() {
                     className={`max-w-[90%] rounded-lg px-3 py-2 text-xs leading-relaxed ${
                       msg.role === "user"
                         ? "bg-primary text-primary-foreground"
-                        : "bg-muted border"
+                        : "bg-[#16162a] border-white/10 text-[#e2e8f0]"
                     }`}
                   >
                     <div className="flex items-center gap-1.5 mb-1 opacity-70">
@@ -376,7 +383,7 @@ export function StoryBrainstorming() {
               ))}
               {isGenerating && (
                 <div className="flex gap-2">
-                  <div className="bg-muted border rounded-lg px-3 py-2 text-xs">
+                  <div className="bg-[#16162a] border border-white/10 rounded-lg px-3 py-2 text-xs">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   </div>
                 </div>
@@ -397,7 +404,7 @@ export function StoryBrainstorming() {
                   }
                 }}
                 placeholder="Votre réponse..."
-                className="text-xs min-h-[36px] resize-none flex-1"
+                className="text-xs min-h-[36px] resize-none flex-1 bg-[#16162a] border-white/10 text-[#e2e8f0] placeholder:text-white/30"
                 disabled={isGenerating}
               />
               <Button
@@ -412,9 +419,9 @@ export function StoryBrainstorming() {
 
             {/* Storytelling panel */}
             {brainstorm.storytelling && (
-              <div className="rounded-lg border bg-muted/30 p-2.5 space-y-2">
+              <div className="rounded-lg border border-white/10 bg-[#16162a] p-2.5 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  <span className="text-[10px] uppercase tracking-wider text-white/50 font-medium">
                     Storytelling en cours
                   </span>
                   <Button
@@ -450,7 +457,7 @@ export function StoryBrainstorming() {
                 <RotateCcw className="h-3 w-3" />
                 Recommencer
               </Button>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[10px] text-white/40">
                 {brainstorm.messages.filter((m) => m.role === "assistant").length} échanges
               </span>
             </div>

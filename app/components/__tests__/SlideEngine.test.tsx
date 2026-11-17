@@ -126,6 +126,47 @@ describe("SlideEngine", () => {
     expect(root.style.color).toBe("rgb(248, 250, 252)");
   });
 
+  it("falls back to template foreground for text elements without an explicit color", () => {
+    const slide = makeSlide({
+      elements: [
+        {
+          id: "e1",
+          type: "text",
+          x: 10,
+          y: 10,
+          w: 80,
+          h: 20,
+          content: "Readable text",
+          style: { fontSize: 14 },
+        },
+      ],
+    });
+    render(<SlideEngine slide={slide} template={darkTemplate} />);
+    const text = screen.getByText("Readable text");
+    // rgb(248, 250, 252) === darkTemplate.colors.foreground (#f8fafc)
+    expect(text).toHaveStyle({ color: "rgb(248, 250, 252)" });
+  });
+
+  it("keeps an explicit element color when set", () => {
+    const slide = makeSlide({
+      elements: [
+        {
+          id: "e1",
+          type: "text",
+          x: 10,
+          y: 10,
+          w: 80,
+          h: 20,
+          content: "Custom color",
+          style: { fontSize: 14, color: "#ff0000" },
+        },
+      ],
+    });
+    render(<SlideEngine slide={slide} template={darkTemplate} />);
+    const text = screen.getByText("Custom color");
+    expect(text).toHaveStyle({ color: "rgb(255, 0, 0)" });
+  });
+
   it("applies template fonts", () => {
     const slide = makeSlide();
     const { container } = render(<SlideEngine slide={slide} template={mockTemplate} />);

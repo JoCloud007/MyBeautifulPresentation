@@ -1,8 +1,61 @@
+# Docker files
 Dockerfile
 .dockerignore
-node_modules
+
+# Dependencies
+**/node_modules
 npm-debug.log
-README.md
-.next
+yarn-error.log
+# NOTE: package-lock.json is needed for npm ci in Dockerfile
+
+# Build outputs
+**/.next
+**/dist
+**/out
+**/.turbo
+**/.cache
+
+# Version control
 .git
+.gitignore
+
+# IDE & editors
+.vscode
+.idea
+*.swp
+*.swo
+
+# Test & coverage
+__tests__
+test
+test-file.txt
+*.test.ts
+*.test.tsx
+coverage
+
+# Logs
+*.log
+logs
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Tidet
 .tidet
+.tidetrc
+
+# Local data
+*.pptx
+*.ppt
+*.pdf
+*.zip
+
+# Prisma (generated)
+prisma/migrations
+
+# TypeScript
+tsconfig.tsbuildinfo
+
+# Docker compose overrides
+docker-compose.override.yml

@@ -6,7 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePresentationStore } from "../stores/presentationStore";
 import { useTemplateStore, getActiveTemplate } from "../stores/templateStore";
-import { exportToPPTX } from "@/lib/pptxExport";
+import {
+  exportHtmlPptx,
+  type HtmlPptxExportMode,
+} from "@/lib/htmlExport/exportHtmlPptx";
 import { LlmConfigDialog } from "./LlmConfigDialog";
 import { PptxImportDialog } from "./PptxImportDialog";
 import {
@@ -50,9 +53,9 @@ export function Toolbar() {
     author: "",
   });
 
-  const handleExport = () => {
+  const handleExport = (mode: HtmlPptxExportMode) => {
     if (!presentation) return;
-    exportToPPTX(presentation, template);
+    void exportHtmlPptx(presentation, template, { mode });
   };
 
   const startEditingTitle = () => {
@@ -92,9 +95,11 @@ export function Toolbar() {
   };
 
   return (
-    <div className="flex items-center justify-between px-4 py-2 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="flex items-center justify-between px-5 py-3 border-b border-white/5 bg-[#0f0f1a]/80 backdrop-blur-xl">
       <div className="flex items-center gap-3 min-w-0">
-        <LayoutTemplate className="h-5 w-5 text-primary flex-shrink-0" />
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#6366f1] to-[#a855f7] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+          M
+        </div>
         <span className="font-semibold text-sm hidden sm:inline flex-shrink-0">
           MyBeautifulPresentation
         </span>
@@ -208,14 +213,18 @@ export function Toolbar() {
         </Dialog>
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="group/button inline-flex shrink-0 items-center justify-center rounded-[min(var(--radius-md),12px)] border border-transparent bg-clip-padding h-7 gap-1 px-2.5 text-[0.8rem] font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5">
+          <DropdownMenuTrigger className="group/button inline-flex shrink-0 items-center justify-center rounded-[min(var(--radius-md),12px)] border border-transparent bg-clip-padding h-7 gap-1 px-2.5 text-[0.8rem] font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-white/10 hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5">
             <Download className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Exporter</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleExport}>
+            <DropdownMenuItem onClick={() => handleExport("design-fidelity")}>
               <Download className="h-3.5 w-3.5 mr-2" />
-              PPTX (PowerPoint)
+              Exporter (design fidèle)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport("native")}>
+              <Download className="h-3.5 w-3.5 mr-2" />
+              Exporter (natif)
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

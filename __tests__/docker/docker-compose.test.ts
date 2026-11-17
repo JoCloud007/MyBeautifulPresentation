@@ -62,8 +62,20 @@ describe("Docker Compose & UI Polish — Docker Configuration", () => {
       expect(composeFile).toContain('"5182:3000"');
     });
 
-    it("does not define ollama service", () => {
-      expect(composeFile).not.toContain("ollama:");
+    it("defines MCP services", () => {
+      expect(composeFile).toContain("mcp-pptx:");
+      expect(composeFile).toContain("mcp-mermaid:");
+      expect(composeFile).toContain("mcp-excalidraw:");
+    });
+
+    it("maps MCP ports from env vars", () => {
+      expect(composeFile).toContain("${MCP_PPTX_PORT:-3050}");
+      expect(composeFile).toContain("${MCP_MERMAID_PORT:-3051}");
+      expect(composeFile).toContain("${MCP_EXCALIDRAW_PORT:-3052}");
+    });
+
+    it("does not define ollama service in compose", () => {
+      expect(composeFile).not.toContain("  ollama:");
     });
 
     it("does not map port 11434", () => {

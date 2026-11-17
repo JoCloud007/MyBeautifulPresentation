@@ -22,92 +22,12 @@ function generateUUID(): string {
   });
 }
 
-export const builtInTemplates: Record<TemplateId, Template> = {
-  corporate: {
-    id: "corporate",
-    name: "Corporate",
-    description: "Design professionnel et élégant pour le monde des affaires",
-    category: "corporate",
-    colors: {
-      name: "corporate",
-      background: "#ffffff",
-      foreground: "#1a1a2e",
-      accent: "#1e40af",
-      secondary: "#64748b",
-      muted: "#f1f5f9",
-      border: "#e2e8f0",
-    },
-    fonts: {
-      heading: "Geist, system-ui, sans-serif",
-      body: "Geist, system-ui, sans-serif",
-    },
-    fontSizes: { heading: 48, body: 18 },
-    background: { type: "color", color: "#ffffff", opacity: 100 },
-    header: { text: "", enabled: false, showDate: false },
-    footer: { text: "", enabled: false, showPageNumber: false, showDate: false },
-    defaultSlides: [
-      { layout: "title" },
-      { layout: "title-content" },
-      { layout: "two-column" },
-    ],
-  },
-  tech: {
-    id: "tech",
-    name: "Tech",
-    description: "Design moderne et dynamique pour la tech et l'innovation",
-    category: "tech",
-    colors: {
-      name: "tech",
-      background: "#0f172a",
-      foreground: "#f8fafc",
-      accent: "#06b6d4",
-      secondary: "#94a3b8",
-      muted: "#1e293b",
-      border: "#334155",
-    },
-    fonts: {
-      heading: "Geist, system-ui, sans-serif",
-      body: "Geist, system-ui, sans-serif",
-    },
-    fontSizes: { heading: 48, body: 18 },
-    background: { type: "color", color: "#0f172a", opacity: 100 },
-    header: { text: "", enabled: false, showDate: false },
-    footer: { text: "", enabled: false, showPageNumber: false, showDate: false },
-    defaultSlides: [
-      { layout: "title" },
-      { layout: "title-content" },
-      { layout: "content-only" },
-    ],
-  },
-  minimal: {
-    id: "minimal",
-    name: "Minimal",
-    description: "Design épuré et minimaliste pour un impact maximal",
-    category: "minimal",
-    colors: {
-      name: "minimal",
-      background: "#fafafa",
-      foreground: "#171717",
-      accent: "#171717",
-      secondary: "#737373",
-      muted: "#f5f5f5",
-      border: "#e5e5e5",
-    },
-    fonts: {
-      heading: "Geist, system-ui, sans-serif",
-      body: "Geist, system-ui, sans-serif",
-    },
-    fontSizes: { heading: 48, body: 18 },
-    background: { type: "color", color: "#fafafa", opacity: 100 },
-    header: { text: "", enabled: false, showDate: false },
-    footer: { text: "", enabled: false, showPageNumber: false, showDate: false },
-    defaultSlides: [
-      { layout: "title" },
-      { layout: "title-only" },
-      { layout: "content-only" },
-    ],
-  },
-};
+// Les templates intégrés vivent dans un module de données pures
+// (`lib/templates/builtin.ts`) afin d'être importables hors navigateur
+// (route API, CLI de déploiement). Ré-exporté ici pour les imports existants.
+export { builtInTemplates } from "@/lib/templates/builtin";
+import { builtInTemplates } from "@/lib/templates/builtin";
+
 
 export const useTemplateStore = create<TemplateState>()(
   persist(

@@ -18,8 +18,8 @@ describe("templateStore", () => {
   });
 
   describe("builtInTemplates", () => {
-    it("should have exactly 3 templates", () => {
-      expect(Object.keys(builtInTemplates)).toHaveLength(3);
+    it("should have at least 3 templates", () => {
+      expect(Object.keys(builtInTemplates).length).toBeGreaterThanOrEqual(3);
     });
 
     it("should have corporate, tech, and minimal templates", () => {

@@ -37,6 +37,26 @@ describe("templateStore", () => {
       expect(useTemplateStore.getState().activeTemplateId).toBe("minimal");
     });
 
+    it("switches to startup template", () => {
+      useTemplateStore.getState().setActiveTemplate("startup");
+      expect(useTemplateStore.getState().activeTemplateId).toBe("startup");
+    });
+
+    it("switches to academic template", () => {
+      useTemplateStore.getState().setActiveTemplate("academic");
+      expect(useTemplateStore.getState().activeTemplateId).toBe("academic");
+    });
+
+    it("switches to creative template", () => {
+      useTemplateStore.getState().setActiveTemplate("creative");
+      expect(useTemplateStore.getState().activeTemplateId).toBe("creative");
+    });
+
+    it("switches to dark-luxury template", () => {
+      useTemplateStore.getState().setActiveTemplate("dark-luxury");
+      expect(useTemplateStore.getState().activeTemplateId).toBe("dark-luxury");
+    });
+
     it("switches back to corporate", () => {
       useTemplateStore.getState().setActiveTemplate("tech");
       useTemplateStore.getState().setActiveTemplate("corporate");
@@ -164,8 +184,29 @@ describe("templateStore", () => {
   });
 
   describe("builtInTemplates", () => {
-    it("contains exactly 3 templates", () => {
-      expect(Object.keys(builtInTemplates)).toHaveLength(3);
+    it("contains exactly 10 templates", () => {
+      expect(Object.keys(builtInTemplates)).toHaveLength(10);
+    });
+
+    it("includes the three premium slide themes", () => {
+      const ids = Object.keys(builtInTemplates);
+      expect(ids).toContain("editorial");
+      expect(ids).toContain("dark-tech");
+      expect(ids).toContain("bold");
+      expect(builtInTemplates.editorial.slideTheme).toBe("editorial");
+      expect(builtInTemplates["dark-tech"].slideTheme).toBe("dark-tech");
+      expect(builtInTemplates.bold.slideTheme).toBe("bold");
+    });
+
+    it("includes all required template ids", () => {
+      const ids = Object.keys(builtInTemplates);
+      expect(ids).toContain("corporate");
+      expect(ids).toContain("tech");
+      expect(ids).toContain("minimal");
+      expect(ids).toContain("startup");
+      expect(ids).toContain("academic");
+      expect(ids).toContain("creative");
+      expect(ids).toContain("dark-luxury");
     });
 
     it("each template has all required color fields", () => {
@@ -186,12 +227,39 @@ describe("templateStore", () => {
       }
     });
 
+    it("each template has spacing, borderRadius and shadows", () => {
+      for (const t of Object.values(builtInTemplates)) {
+        expect(t.spacing).toBeDefined();
+        expect(t.borderRadius).toBeDefined();
+        expect(t.shadows).toBeDefined();
+      }
+    });
+
     it("corporate template has light background", () => {
       expect(builtInTemplates.corporate.colors.background).toBe("#ffffff");
     });
 
     it("tech template has dark background", () => {
       expect(builtInTemplates.tech.colors.background).toBe("#0f172a");
+    });
+
+    it("tech template defines a gradient background", () => {
+      expect(builtInTemplates.tech.background?.type).toBe("gradient");
+      expect(builtInTemplates.tech.background?.gradient).toBeDefined();
+      expect(builtInTemplates.tech.background?.gradient!.stops.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("tech template defines a glow shadow", () => {
+      expect(builtInTemplates.tech.shadows?.glow).toBeTruthy();
+    });
+
+    it("dark-luxury template defines a gradient background", () => {
+      expect(builtInTemplates["dark-luxury"].background?.type).toBe("gradient");
+      expect(builtInTemplates["dark-luxury"].background?.gradient).toBeDefined();
+    });
+
+    it("dark-luxury template defines a glow shadow", () => {
+      expect(builtInTemplates["dark-luxury"].shadows?.glow).toBeTruthy();
     });
   });
 });

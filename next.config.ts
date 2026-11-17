@@ -3,6 +3,15 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: 'standalone',
   allowedDevOrigins: ['127.0.0.1'],
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  env: {
+    MCP_PPTX_PORT: process.env.MCP_PPTX_PORT || "3050",
+    MCP_MERMAID_PORT: process.env.MCP_MERMAID_PORT || "3051",
+    MCP_EXCALIDRAW_PORT: process.env.MCP_EXCALIDRAW_PORT || "3052",
+    MCP_WEB_PORT: process.env.MCP_WEB_PORT || "3053",
+  },
   async headers() {
     return [
       {

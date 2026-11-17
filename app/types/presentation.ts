@@ -17,6 +17,15 @@ export interface TimelineEvent {
 
 export type TimeScale = "days" | "weeks" | "months" | "quarters" | "years" | "decades";
 
+export interface ChronologyRow {
+  id: number;
+  task: string;
+  start: string;
+  duration: string;
+  color: string;
+  parentId?: number;
+}
+
 export interface SlideData {
   gantt?: {
     tasks: GanttTask[];
@@ -25,6 +34,10 @@ export interface SlideData {
   timeline?: {
     events: TimelineEvent[];
     viewMode?: TimeScale;
+  };
+  chronology?: {
+    rows: ChronologyRow[];
+    type: "gantt" | "timeline" | "roadmap";
   };
 }
 
@@ -39,7 +52,49 @@ export type SlideLayout =
   | "timeline"
   | "gantt"
   | "mermaid"
-  | "excalidraw";
+  | "excalidraw"
+  | "roadmap"
+  | "architecture"
+  | "comparison";
+
+export type SlideType = "content" | "chronology" | "diagram" | "powerbi";
+
+export interface SlideElementStyle {
+  fontSize?: number;
+  fontFamily?: string;
+  fontWeight?: number | string;
+  color?: string;
+  backgroundColor?: string;
+  borderColor?: string;
+  borderWidth?: number;
+  /** px (number) or any CSS length/percentage (e.g. "50%" for a circle). */
+  borderRadius?: number | string;
+  textAlign?: "left" | "center" | "right";
+  padding?: number;
+  opacity?: number;
+  rotation?: number;
+  zIndex?: number;
+}
+
+export interface PowerBiConfig {
+  embedUrl: string;
+  reportId?: string;
+  pageName?: string;
+  title: string;
+  mode: "publish-to-web" | "secure-embed";
+}
+
+export interface SlideElement {
+  id: string;
+  type: "text" | "shape" | "image" | "table" | "chronology" | "diagram" | "powerbi";
+  subtype?: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  content?: string;
+  style?: SlideElementStyle;
+}
 
 export interface Slide {
   id: string;
@@ -48,6 +103,7 @@ export interface Slide {
   layout: SlideLayout;
   data?: SlideData;
   notes?: string;
+  elements?: SlideElement[];
 }
 
 export interface Presentation {
@@ -58,14 +114,9 @@ export interface Presentation {
   slides: Slide[];
   createdAt: number;
   updatedAt: number;
-}
-
-export interface SlideElement {
-  type: "text" | "image" | "shape" | "chart";
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  content?: string;
-  style?: Record<string, unknown>;
+  /**
+   * Internal migration marker: the one-shot cleanup of legacy element styles
+   * (hard-coded palette + undersized font sizes) already ran on this deck.
+   */
+  legacyStylesNormalized?: boolean;
 }

@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+# nested workspaces (mcp/*) ship their own node_modules: never commit them
+node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -36,9 +38,15 @@ yarn-error.log*
 .env.*.local
 !.env.example
 
+# docker
+docker-compose.override.yml
+
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Tidet resources are synced by Tidet Cloud, never by Git.
+.tidet/

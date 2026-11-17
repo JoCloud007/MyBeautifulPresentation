@@ -44,7 +44,7 @@ export function ExcalidrawEngine({ data, className = "" }: ExcalidrawEngineProps
   if (!parsedData) {
     return (
       <div className={`flex items-center justify-center ${className}`}>
-        <div className="text-sm text-muted-foreground">Chargement...</div>
+        <div className="text-sm text-white/40">Chargement...</div>
       </div>
     );
   }

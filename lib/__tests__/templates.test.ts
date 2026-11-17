@@ -37,11 +37,13 @@ describe("lib/templates", () => {
   });
 
   describe("getAllTemplates", () => {
-    it("returns exactly 3 built-in templates", () => {
+    it("returns all built-in templates", () => {
       const all = getAllTemplates();
-      expect(all).toHaveLength(3);
+      expect(all.length).toBeGreaterThanOrEqual(3);
       const ids = all.map((t) => t.id).sort();
-      expect(ids).toEqual(["corporate", "minimal", "tech"]);
+      expect(ids).toContain("corporate");
+      expect(ids).toContain("minimal");
+      expect(ids).toContain("tech");
     });
 
     it("each template has required fields", () => {
@@ -91,6 +93,7 @@ describe("lib/templates", () => {
       for (const key of expectedKeys) {
         expect(vars).toHaveProperty(key);
       }
+      expect(Object.keys(vars).length).toBeGreaterThanOrEqual(8);
     });
   });
 });

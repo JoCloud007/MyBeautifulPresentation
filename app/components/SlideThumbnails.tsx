@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { usePresentationStore } from "../stores/presentationStore";
 import { useTemplateStore, getActiveTemplate } from "../stores/templateStore";
 import { SlideEngine } from "./SlideEngine";
@@ -19,7 +20,9 @@ export function SlideThumbnails() {
     addSlide,
     removeSlide,
     duplicateSlide,
+    updateSlide,
   } = usePresentationStore();
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const templateState = useTemplateStore();
   const template = getActiveTemplate(templateState);
@@ -27,8 +30,8 @@ export function SlideThumbnails() {
   if (!presentation || presentation.slides.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-32 gap-2">
-        <span className="text-xs text-muted-foreground">Aucune slide</span>
-        <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => addSlide()}>
+        <span className="text-xs text-white/40">Aucune slide</span>
+        <Button variant="outline" size="sm" className="text-xs gap-1 bg-white/5 border-white/10 text-[#e2e8f0] hover:bg-white/10 hover:text-white" onClick={() => addSlide()}>
           <Plus className="h-3 w-3" />
           Ajouter
         </Button>
@@ -44,70 +47,81 @@ export function SlideThumbnails() {
             <div
               key={slide.id}
               className={cn(
-                "group relative flex flex-col gap-1.5 p-2 rounded-lg border text-left transition-all",
+                "group relative rounded-lg border text-left transition-all",
                 currentSlideIndex === index
-                  ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm"
-                  : "border-border bg-card hover:bg-accent/50 hover:border-accent/50"
+                  ? "border-[#6366f1]/60 bg-[#6366f1]/5"
+                  : "border-white/5 bg-transparent hover:border-white/10"
               )}
             >
-              {/* Slide number badge */}
-              <div className="absolute -top-1.5 -left-1.5 z-10">
-                <span
-                  className={cn(
-                    "flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shadow-sm",
-                    currentSlideIndex === index
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground"
-                  )}
-                >
-                  {index + 1}
-                </span>
-              </div>
-
-              {/* Mini slide preview - clickable */}
+              {/* Mini slide preview - clickable. The inner box keeps the slide's
+                  16:9 ratio; the slide number lives in the actions row so it no
+                  longer steals vertical space (which squashed the thumbnail). */}
               <button
                 onClick={() => setCurrentSlide(index)}
-                className="w-full aspect-video rounded border overflow-hidden flex-shrink-0 transition-transform hover:scale-[1.02]"
-                style={{
-                  borderColor: template.colors.border,
-                }}
+                data-testid={`slide-thumb-${index}`}
+                className="block w-full rounded-md p-1.5 pt-1.5"
               >
-                <SlideEngine
-                  slide={slide}
-                  template={template}
-                  scale={0.15}
-                />
+                <div className="w-full aspect-video rounded overflow-hidden border border-white/5">
+                  <SlideEngine
+                    slide={slide}
+                    template={template}
+                    scale={0.15}
+                  />
+                </div>
               </button>
 
-              {/* Actions - visible on hover */}
-              <div className="flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="text-[10px] text-muted-foreground capitalize truncate max-w-[80px]">
-                  {slide.layout.replace(/-/g, " ")}
+              {/* Actions */}
+              <div className="flex items-center justify-between px-2 pb-1.5 gap-1">
+                <span className="text-[9px] font-medium text-white/30 tabular-nums">
+                  {index + 1}
                 </span>
+                {editingId === slide.id ? (
+                  <input
+                    autoFocus
+                    type="text"
+                    value={slide.title || ""}
+                    onChange={(e) => updateSlide(index, { title: e.target.value })}
+                    onBlur={() => setEditingId(null)}
+                    onKeyDown={(e) => { if (e.key === "Enter") setEditingId(null); }}
+                    className="text-[9px] bg-white/10 text-white/70 rounded px-1 py-0.5 outline-none border border-white/20 w-20"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingId(slide.id);
+                    }}
+                    className="text-[9px] text-white/30 hover:text-white/60 truncate max-w-[80px] text-left cursor-pointer"
+                    title="Cliquer pour renommer"
+                  >
+                    {slide.title || "Sans titre"}
+                  </button>
+                )}
                 <div className="flex items-center gap-0.5">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-5 w-5"
+                    className="h-4 w-4 text-white/40 hover:text-white"
                     onClick={(e) => {
                       e.stopPropagation();
                       duplicateSlide(index);
                     }}
                     title="Dupliquer"
                   >
-                    <Copy className="h-2.5 w-2.5" />
+                    <Copy className="h-2 w-2" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-5 w-5 text-destructive hover:text-destructive"
+                    className="h-4 w-4 text-white/40 hover:text-red-400"
                     onClick={(e) => {
                       e.stopPropagation();
                       removeSlide(index);
                     }}
                     title="Supprimer"
                   >
-                    <Trash2 className="h-2.5 w-2.5" />
+                    <Trash2 className="h-2 w-2" />
                   </Button>
                 </div>
               </div>
@@ -117,16 +131,13 @@ export function SlideThumbnails() {
       </div>
 
       {/* Add slide button */}
-      <div className="p-3 border-t">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full text-xs gap-1.5"
+      <div className="p-3">
+        <button
+          className="w-full flex items-center justify-center py-2 rounded-lg border border-dashed border-white/20 text-white/60 hover:text-white hover:border-white/40 transition-colors text-xs"
           onClick={() => addSlide()}
         >
           <Plus className="h-3.5 w-3.5" />
-          Ajouter une slide
-        </Button>
+        </button>
       </div>
     </div>
   );

@@ -65,7 +65,7 @@ export function SlideViewer() {
         setCurrentSlide(0);
       } else if (e.key === "End") {
         e.preventDefault();
-        setCurrentSlide(totalSlides - 1);
+        if (totalSlides > 0) setCurrentSlide(totalSlides - 1);
       }
     };
 
@@ -75,16 +75,16 @@ export function SlideViewer() {
 
   if (!presentation) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+      <div className="flex items-center justify-center h-full text-white/40 text-sm">
         Aucune présentation
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-muted/20">
+    <div className="flex flex-col h-full bg-[#0a0a14]">
       {/* Navigation & info bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-background/95 backdrop-blur">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-[#0f0f1a]/80 backdrop-blur-sm">
         <div className="flex items-center gap-1.5">
           <Button
             variant="ghost"
@@ -95,8 +95,8 @@ export function SlideViewer() {
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-muted text-xs">
-            <Monitor className="h-3 w-3 text-muted-foreground" />
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-white/10 text-xs">
+            <Monitor className="h-3 w-3 text-white/40" />
             <span className="font-medium tabular-nums min-w-[48px] text-center">
               {currentSlideIndex + 1} / {totalSlides}
             </span>
@@ -114,11 +114,11 @@ export function SlideViewer() {
 
         <div className="flex items-center gap-1.5">
           {slide && (
-            <span className="text-[11px] text-muted-foreground capitalize hidden sm:inline">
+            <span className="text-[11px] text-white/40 capitalize hidden sm:inline">
               {slide.layout.replace(/-/g, " ")}
             </span>
           )}
-          <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
+          <div className="h-4 w-px bg-white/10 mx-1 hidden sm:block" />
           <Button
             variant="ghost"
             size="icon"
@@ -128,7 +128,7 @@ export function SlideViewer() {
           >
             <ZoomOut className="h-3.5 w-3.5" />
           </Button>
-          <span className="text-[11px] text-muted-foreground w-10 text-center tabular-nums">
+          <span className="text-[11px] text-white/40 w-10 text-center tabular-nums">
             {Math.round(zoom * 100)}%
           </span>
           <Button
@@ -164,15 +164,21 @@ export function SlideViewer() {
                 transition={{ duration: 0.25, ease: "easeInOut" }}
                 className="w-full max-w-4xl aspect-video rounded-xl shadow-2xl overflow-hidden border"
                 style={{
-                  transform: `scale(${zoom})`,
-                  transformOrigin: "center center",
                   borderColor: template.colors.border,
                 }}
               >
-                <SlideEngine slide={slide} template={template} />
+                <div
+                  className="w-full h-full"
+                  style={{
+                    transform: `scale(${zoom})`,
+                    transformOrigin: "center center",
+                  }}
+                >
+                  <SlideEngine slide={slide} template={template} />
+                </div>
               </motion.div>
             ) : (
-              <div className="text-muted-foreground text-sm">
+              <div className="text-white/40 text-sm">
                 Aucune slide
               </div>
             )}
@@ -181,13 +187,13 @@ export function SlideViewer() {
 
         {/* Notes panel */}
         {slide?.notes && (
-          <div className="border-t bg-background/80 backdrop-blur px-4 py-2">
+          <div className="border-t border-white/5 bg-[#0f0f1a]/80 backdrop-blur-sm px-4 py-2">
             <button
               onClick={() => setShowNotes(!showNotes)}
-              className="text-[11px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+              className="text-[11px] text-white/40 hover:text-foreground transition-colors flex items-center gap-1"
             >
               <span className="font-medium">Notes</span>
-              <span className="text-muted-foreground/60">
+              <span className="text-white/60">
                 {showNotes ? "(masquer)" : "(afficher)"}
               </span>
             </button>
@@ -200,7 +206,7 @@ export function SlideViewer() {
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed whitespace-pre-wrap">
+                  <p className="text-xs text-white/40 mt-1 leading-relaxed whitespace-pre-wrap">
                     {slide.notes}
                   </p>
                 </motion.div>

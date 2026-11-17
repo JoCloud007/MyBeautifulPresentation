@@ -8,6 +8,7 @@ import { TimelineEngine } from "./TimelineEngine";
 import { MermaidEngine } from "./MermaidEngine";
 import { ExcalidrawEngine } from "./ExcalidrawEngine";
 import { parseGanttContent, parseTimelineContent } from "@/lib/ganttParser";
+import { isSlideThemeId, SlideThemeDecor } from "@/app/design-system/slide-themes";
 
 export interface SlideEngineProps {
   slide: Slide;
@@ -46,6 +47,100 @@ export function SlideEngine({
     color: colors.foreground,
   };
 
+  // If slide has WYSIWYG elements, render them
+  if (slide.elements && slide.elements.length > 0) {
+    return (
+      <div
+        className={cn("w-full h-full overflow-hidden relative", className)}
+        style={baseStyle}
+        data-layout="elements"
+        data-interactive={interactive}
+      >
+        {bg.type === "image" && bg.imageUrl && (
+          <div
+            className="absolute inset-0 bg-cover bg-center pointer-events-none"
+            style={{
+              backgroundImage: `url(${bg.imageUrl})`,
+              opacity: (bg.opacity || 100) / 100,
+            }}
+          />
+        )}
+        {isSlideThemeId(template.slideTheme) && (
+          <SlideThemeDecor themeId={template.slideTheme} accent={colors.accent} />
+        )}
+        {slide.elements.map((el) => (
+          <div
+            key={el.id}
+            className="absolute"
+            style={{
+              left: `${el.x}%`,
+              top: `${el.y}%`,
+              width: `${el.w}%`,
+              height: `${el.h}%`,
+              zIndex: el.style?.zIndex || 1,
+            }}
+          >
+            {el.type === "text" ? (
+              <div
+                className="w-full h-full overflow-hidden p-1"
+                style={{
+                  fontSize: el.style?.fontSize ? `${el.style.fontSize * scale}px` : `${20 * scale}px`,
+                  fontFamily: el.style?.fontFamily || fonts.body,
+                  fontWeight: el.style?.fontWeight || 400,
+                  color: el.style?.color || colors.foreground,
+                  textAlign: el.style?.textAlign || "left",
+                  backgroundColor: el.style?.backgroundColor || "transparent",
+                  borderRadius: el.style?.borderRadius || 0,
+                  border: el.style?.borderWidth
+                    ? `${el.style.borderWidth}px solid ${el.style.borderColor || "#94a3b8"}`
+                    : "none",
+                  lineHeight: 1.4,
+                }}
+              >
+                {el.content}
+              </div>
+            ) : el.type === "shape" ? (
+              <div
+                className="w-full h-full"
+                style={{
+                  backgroundColor: el.style?.backgroundColor || colors.muted,
+                  borderRadius: el.style?.borderRadius || 0,
+                  border: el.style?.borderWidth
+                    ? `${el.style.borderWidth}px solid ${el.style.borderColor || colors.border}`
+                    : `1px solid ${colors.border}`,
+                }}
+              />
+            ) : el.type === "table" ? (
+              <div className="w-full h-full p-0.5 overflow-auto text-xs">
+                <table className="w-full border-collapse">
+                  <tbody>
+                    {(el.content || "").split("\n").map((row, ri) => (
+                      <tr key={ri}>
+                        {row.split("|").map((cell, ci) => (
+                          <td key={ci} className="border border-slate-300 p-0.5" style={{ fontSize: `${10 * scale}px`, color: colors.foreground }}>
+                            {cell.trim()}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : el.type === "chronology" ? (
+              <ChronologyThumbnail element={el} template={template} scale={scale} />
+            ) : el.type === "diagram" ? (
+              <DiagramThumbnail element={el} />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-xs text-slate-400">
+                Image
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn("w-full h-full overflow-hidden relative", className)}
@@ -62,6 +157,11 @@ export function SlideEngine({
             opacity: (bg.opacity || 100) / 100,
           }}
         />
+      )}
+
+      {/* Premium theme decor layer (behind the content, captured as export background) */}
+      {isSlideThemeId(template.slideTheme) && (
+        <SlideThemeDecor themeId={template.slideTheme} accent={colors.accent} />
       )}
 
       {/* Header */}
@@ -119,6 +219,90 @@ export function SlideEngine({
       )}
     </div>
   );
+}
+
+function DiagramThumbnail({ element }: { element: { type: string; subtype?: string; content?: string } }) {
+  const type = element.subtype || "mermaid";
+  if (type === "mermaid") {
+    return (
+      <div className="w-full h-full overflow-hidden bg-white">
+        <MermaidEngine code={element.content || "graph TD\n  A[Start] --> B[End]"} />
+      </div>
+    );
+  }
+  return (
+    <div className="w-full h-full flex items-center justify-center text-xs text-slate-400">
+      Diagramme
+    </div>
+  );
+}
+
+function ChronologyThumbnail({
+  element,
+  template,
+  scale,
+}: {
+  element: { type: string; subtype?: string; content?: string; style?: { backgroundColor?: string } };
+  template: { colors: any; fonts: any };
+  scale: number;
+}) {
+  const data = (() => {
+    try {
+      return JSON.parse(element.content || "{}") || {};
+    } catch {
+      return {};
+    }
+  })();
+  const type = element.subtype || data.type || "gantt";
+  const rows = data.rows || [];
+  const bgColor = element.style?.backgroundColor || "transparent";
+  if (rows.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-xs text-slate-400" style={{ backgroundColor: bgColor }}>
+        Chronologie
+      </div>
+    );
+  }
+  if (type === "gantt") {
+    const content = rows
+      .map((r: any) => {
+        const end = addDays(r.start, parseDurationDays(r.duration));
+        return `${r.task} | ${r.start} | ${end}${r.color ? ` | ${r.color}` : ""}`;
+      })
+      .join("\n");
+    const tasks = parseGanttContent(content);
+    return (
+      <div className="w-full h-full overflow-hidden" style={{ backgroundColor: bgColor }}>
+        <GanttEngine tasks={tasks} colors={template.colors} fonts={template.fonts} scale={scale} />
+      </div>
+    );
+  }
+  if (type === "timeline") {
+    const content = rows.map((r: any) => `${r.start} - ${r.task}`).join("\n");
+    const events = parseTimelineContent(content);
+    return (
+      <div className="w-full h-full overflow-hidden" style={{ backgroundColor: bgColor }}>
+        <TimelineEngine events={events} colors={template.colors} fonts={template.fonts} scale={scale} />
+      </div>
+    );
+  }
+  return (
+    <div className="w-full h-full flex items-center justify-center text-xs text-slate-400" style={{ backgroundColor: bgColor }}>
+      Roadmap
+    </div>
+  );
+}
+
+function addDays(iso: string, days: number): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+function parseDurationDays(duration: string): number {
+  const match = duration.match(/(\d+)/);
+  return match ? parseInt(match[1], 10) : 7;
 }
 
 function LayoutRenderer({

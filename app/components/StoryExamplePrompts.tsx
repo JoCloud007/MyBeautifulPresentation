@@ -40,10 +40,10 @@ export function StoryExamplePrompts({ onSelect }: StoryExamplePromptsProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="border rounded-lg bg-muted/30">
+    <div className="border rounded-lg bg-white/5">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center justify-between w-full px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+        className="flex items-center justify-between w-full px-3 py-2 text-xs font-medium text-white/40 hover:text-foreground transition-colors"
       >
         <span className="flex items-center gap-1.5">
           <Lightbulb className="h-3.5 w-3.5" />
@@ -63,7 +63,7 @@ export function StoryExamplePrompts({ onSelect }: StoryExamplePromptsProps) {
               key={prompt.label}
               variant="outline"
               size="sm"
-              className="text-[11px] h-7 px-2.5 bg-background hover:bg-accent"
+              className="text-[11px] h-7 px-2.5 bg-transparent hover:bg-accent"
               onClick={() => {
                 onSelect(prompt.text);
                 setExpanded(false);
